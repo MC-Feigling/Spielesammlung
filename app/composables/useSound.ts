@@ -1,6 +1,6 @@
 import { useSettingsStore } from '~/stores/settings'
 
-export type SoundName = 'dice' | 'match' | 'hit' | 'win'
+export type SoundName = 'dice' | 'match' | 'hit' | 'win' | 'start'
 
 export function useSound() {
   const settings = useSettingsStore()
