@@ -51,6 +51,31 @@ export const KNIFFEL_CATEGORY_LABELS: Record<KniffelCategory, string> = {
   fewPips: 'Wenig Augen (≤10)',
 }
 
+export const UPPER_CATEGORIES: readonly KniffelCategory[] = [
+  'ones',
+  'twos',
+  'threes',
+  'fours',
+  'fives',
+  'sixes',
+]
+
+export const UPPER_BONUS_THRESHOLD = 63
+export const UPPER_BONUS_POINTS = 35
+
+export function upperSum(scoreSheet: Partial<Record<KniffelCategory, number>>): number {
+  return UPPER_CATEGORIES.reduce((sum, category) => sum + (scoreSheet[category] ?? 0), 0)
+}
+
+export function upperBonus(scoreSheet: Partial<Record<KniffelCategory, number>>): number {
+  return upperSum(scoreSheet) >= UPPER_BONUS_THRESHOLD ? UPPER_BONUS_POINTS : 0
+}
+
+export function totalScore(scoreSheet: Partial<Record<KniffelCategory, number>>): number {
+  const categoryTotal = Object.values(scoreSheet).reduce((sum, score) => sum + (score ?? 0), 0)
+  return categoryTotal + upperBonus(scoreSheet)
+}
+
 export type DiceRoll = readonly [number, number, number, number, number]
 
 function validateDice(dice: readonly number[]): asserts dice is DiceRoll {

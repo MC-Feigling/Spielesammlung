@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { scoreCategory } from '../../app/features/games/kniffel/scoring'
+import {
+  scoreCategory,
+  totalScore,
+  upperBonus,
+  upperSum,
+} from '../../app/features/games/kniffel/scoring'
 
 describe('kniffel scoring', () => {
   it('scores kniffel as 60', () => {
@@ -41,5 +46,59 @@ describe('kniffel scoring', () => {
   it('rejects non-dice rolls', () => {
     expect(() => scoreCategory('chance', [1, 2, 3, 4] as never)).toThrow('fünf Würfel')
     expect(() => scoreCategory('chance', [1, 2, 3, 4, 7] as never)).toThrow('ungültige Augenzahlen')
+  })
+})
+
+describe('kniffel upper bonus', () => {
+  it('sums only upper categories', () => {
+    expect(upperSum({
+      ones: 3,
+      twos: 6,
+      threes: 9,
+      chance: 20,
+    })).toBe(18)
+  })
+
+  it('returns zero bonus below 63', () => {
+    const sheet = {
+      ones: 5,
+      twos: 10,
+      threes: 15,
+      fours: 16,
+      fives: 10,
+      sixes: 6,
+    }
+    expect(upperSum(sheet)).toBe(62)
+    expect(upperBonus(sheet)).toBe(0)
+  })
+
+  it('returns 35 bonus at or above 63', () => {
+    const sheet = {
+      ones: 5,
+      twos: 10,
+      threes: 15,
+      fours: 16,
+      fives: 15,
+      sixes: 6,
+    }
+    expect(upperSum(sheet)).toBe(67)
+    expect(upperBonus(sheet)).toBe(35)
+  })
+
+  it('includes bonus in totalScore', () => {
+    const sheet = {
+      ones: 5,
+      twos: 10,
+      threes: 15,
+      fours: 16,
+      fives: 15,
+      sixes: 6,
+      kniffel: 60,
+    }
+    expect(totalScore(sheet)).toBe(67 + 35 + 60)
+  })
+
+  it('totalScore without bonus equals category sum', () => {
+    expect(totalScore({ ones: 3, chance: 12 })).toBe(15)
   })
 })
