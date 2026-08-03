@@ -5,5 +5,6 @@ export default defineConfig({
     name: 'unit',
     include: ['test/unit/**/*.{test,spec}.ts'],
     environment: 'node',
+    passWithNoTests: true,
   },
 })
