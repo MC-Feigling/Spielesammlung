@@ -19,3 +19,10 @@
 ## Concern
 
 - Nuxt build emits an existing CSS-entry warning for `./app/assets/css/main.css` in `nuxt.config.ts`. Scope excludes unrelated configuration changes.
+
+## Important UI findings fixed
+
+- Ring pieces now require ownership by `state.currentPlayerIndex`; opponent pieces are disabled and the click handler rejects them defensively.
+- Ring movements animate their `left` and `top` positions for 300 ms; reduced-motion settings disable the transition.
+- Added `canControlPiece` engine helper with a Vitest regression test for player ownership.
+- Verification: `bun run test` — 34 passed; `bun run build` — exit code 0.

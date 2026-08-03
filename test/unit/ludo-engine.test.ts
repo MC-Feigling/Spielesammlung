@@ -1,8 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { chooseLudoAction } from '../../app/features/games/ludo/ai'
-import { createLudoGame, createLudoGameFromState } from '../../app/features/games/ludo/engine'
+import { canControlPiece, createLudoGame, createLudoGameFromState } from '../../app/features/games/ludo/engine'
 
 describe('ludo engine', () => {
+  it('allows controlling only pieces owned by the current player', () => {
+    const game = createLudoGameFromState({
+      playerCount: 2,
+      currentPlayerIndex: 1,
+      pendingRoll: 3,
+      pieces: [
+        [{ progress: 0 }, { progress: -1 }, { progress: -1 }, { progress: -1 }],
+        [{ progress: 0 }, { progress: -1 }, { progress: -1 }, { progress: -1 }],
+      ],
+    })
+    const state = game.getState()
+
+    expect(canControlPiece(state, 0)).toBe(false)
+    expect(canControlPiece(state, 1)).toBe(true)
+  })
+
   it('cannot enter from the yard without rolling a six', () => {
     const game = createLudoGame({ playerCount: 2, seed: 1 })
 

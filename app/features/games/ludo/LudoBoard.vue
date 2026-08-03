@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
 import { getRingIndex, isInHome, isInYard, LUDO_PLAYER_COLORS, type LudoPlayerColor } from './board'
 import { chooseLudoAction } from './ai'
-import { createLudoGame, type LudoAction, type LudoGameState, type LudoMoveFrom } from './engine'
+import { canControlPiece, createLudoGame, type LudoAction, type LudoGameState, type LudoMoveFrom } from './engine'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -73,8 +73,8 @@ function rollDice() {
   applyAction({ type: 'roll' })
 }
 
-function movePiece(pieceIndex: number, from: LudoMoveFrom) {
-  if (isAiTurn.value || !isValidMove(pieceIndex, from)) return
+function movePiece(playerIndex: number, pieceIndex: number, from: LudoMoveFrom) {
+  if (isAiTurn.value || !canControlPiece(state.value, playerIndex) || !isValidMove(pieceIndex, from)) return
   applyAction({ type: 'move', pieceIndex, from })
 }
 
@@ -130,12 +130,12 @@ onBeforeUnmount(() => {
             v-for="piece in ringPieces"
             :key="`ring-${piece.playerIndex}-${piece.pieceIndex}`"
             type="button"
-            class="absolute z-10 flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition hover:scale-110 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:size-11"
+            class="absolute z-10 flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition-[left,top,transform] duration-300 ease-out hover:scale-110 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] motion-reduce:transition-none sm:size-11"
             :class="colorClass(piece.playerIndex)"
             :style="ringPosition(piece.ringIndex)"
-            :disabled="isAiTurn || !isValidMove(piece.pieceIndex, 'ring')"
-            :aria-label="`${players[piece.playerIndex].displayName}, Figur ${piece.pieceIndex + 1}${isValidMove(piece.pieceIndex, 'ring') ? ' ziehen' : ''}`"
-            @click="movePiece(piece.pieceIndex, 'ring')"
+            :disabled="isAiTurn || !canControlPiece(state, piece.playerIndex) || !isValidMove(piece.pieceIndex, 'ring')"
+            :aria-label="`${players[piece.playerIndex].displayName}, Figur ${piece.pieceIndex + 1}${canControlPiece(state, piece.playerIndex) && isValidMove(piece.pieceIndex, 'ring') ? ' ziehen' : ''}`"
+            @click="movePiece(piece.playerIndex, piece.pieceIndex, 'ring')"
           >
             {{ piece.pieceIndex + 1 }}
           </button>
@@ -168,9 +168,9 @@ onBeforeUnmount(() => {
               type="button"
               class="aspect-square rounded-xl border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition hover:scale-105 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               :class="colorClass(playerIndex)"
-              :disabled="isAiTurn || playerIndex !== state.currentPlayerIndex || !isValidMove(state.pieces[playerIndex].indexOf(piece), 'yard')"
+              :disabled="isAiTurn || !canControlPiece(state, playerIndex) || !isValidMove(state.pieces[playerIndex].indexOf(piece), 'yard')"
               :aria-label="`${player.displayName}, Figur aus dem Haus ziehen`"
-              @click="movePiece(state.pieces[playerIndex].indexOf(piece), 'yard')"
+              @click="movePiece(playerIndex, state.pieces[playerIndex].indexOf(piece), 'yard')"
             >
               ●
             </button>
@@ -183,9 +183,9 @@ onBeforeUnmount(() => {
               type="button"
               class="rounded-full border-2 px-3 py-1 text-xs font-bold transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               :class="colorClass(playerIndex)"
-              :disabled="isAiTurn || playerIndex !== state.currentPlayerIndex || !isValidMove(state.pieces[playerIndex].indexOf(piece), 'home')"
+              :disabled="isAiTurn || !canControlPiece(state, playerIndex) || !isValidMove(state.pieces[playerIndex].indexOf(piece), 'home')"
               :aria-label="`${player.displayName}, Figur im Ziel weiterziehen`"
-              @click="movePiece(state.pieces[playerIndex].indexOf(piece), 'home')"
+              @click="movePiece(playerIndex, state.pieces[playerIndex].indexOf(piece), 'home')"
             >
               Ziel {{ piece.progress - 39 }}
             </button>

@@ -42,6 +42,10 @@ export interface LudoGameStateInput {
 const MIN_DIE_VALUE = 1
 const MAX_DIE_VALUE = 6
 
+export function canControlPiece(state: LudoGameState, playerIndex: number): boolean {
+  return playerIndex === state.currentPlayerIndex
+}
+
 function createSeededRandom(seed: number): () => number {
   let value = seed >>> 0
 
