@@ -3,9 +3,11 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
 import {
   getRingIndex,
+  isFullyHome,
   isInHome,
   isInYard,
   LUDO_HOME_LENGTH,
+  LUDO_HOME_START_PROGRESS,
   LUDO_PLAYER_COLORS,
   LUDO_RING_SIZE,
   LUDO_START_INDEXES,
@@ -38,6 +40,14 @@ const SEAT_COUNT = 4
 const YARD_SLOT_COUNT = 4
 const CIRCLE_RADIUS = 0.36
 const HUB_RADIUS = 0.42
+const STACK_OFFSET_PX = 7
+const PIECE_BASE_Z_INDEX = 10
+
+const LOCATION_LABEL: Record<LudoMoveFrom, string> = {
+  yard: 'Haus',
+  ring: 'Bahn',
+  home: 'Ziel',
+}
 
 const COLOR_CLASSES: Record<LudoPlayerColor, string> = {
   red: 'border-[#9e3b24] bg-[#e7674c] text-white',
@@ -100,19 +110,83 @@ const yardCells = Array.from({ length: SEAT_COUNT }, (_, playerIndex) =>
   })),
 ).flat()
 
-const ringPieces = computed(() => state.value.pieces.flatMap((pieces, playerIndex) => (
-  pieces.flatMap((piece, pieceIndex) => {
-    const ringIndex = getRingIndex(playerIndex, piece.progress)
-    if (ringIndex === null) return []
-    return [{
-      playerIndex,
-      pieceIndex,
-      ringIndex,
-      color: LUDO_PLAYER_COLORS[playerIndex],
-      style: cellStyle(getRingCell(ringIndex)),
-    }]
+interface BoardPieceView {
+  playerIndex: number
+  pieceIndex: number
+  from: LudoMoveFrom
+  style: { left: string, top: string, zIndex: number }
+}
+
+interface PlacedPiece {
+  playerIndex: number
+  pieceIndex: number
+  from: LudoMoveFrom
+  cell: BoardCell
+}
+
+function pieceBoardCell(playerIndex: number, pieceIndex: number, progress: number): { from: LudoMoveFrom, cell: BoardCell } | null {
+  if (isInYard({ progress })) {
+    return { from: 'yard', cell: getYardCell(playerIndex, pieceIndex) }
+  }
+
+  if (isInHome({ progress })) {
+    return { from: 'home', cell: getHomeCell(playerIndex, progress - LUDO_HOME_START_PROGRESS) }
+  }
+
+  const ringIndex = getRingIndex(playerIndex, progress)
+  if (ringIndex === null) return null
+
+  return { from: 'ring', cell: getRingCell(ringIndex) }
+}
+
+const boardPieces = computed((): BoardPieceView[] => {
+  const placed: PlacedPiece[] = []
+
+  state.value.pieces.forEach((pieces, playerIndex) => {
+    if (playerIndex >= props.players.length) return
+
+    pieces.forEach((piece, pieceIndex) => {
+      const mapped = pieceBoardCell(playerIndex, pieceIndex, piece.progress)
+      if (!mapped) return
+
+      placed.push({
+        playerIndex,
+        pieceIndex,
+        from: mapped.from,
+        cell: mapped.cell,
+      })
+    })
   })
-)))
+
+  const groups = new Map<string, PlacedPiece[]>()
+  for (const item of placed) {
+    const key = `${item.cell.row},${item.cell.col}`
+    const group = groups.get(key)
+    if (group) group.push(item)
+    else groups.set(key, [item])
+  }
+
+  const result: BoardPieceView[] = []
+  for (const group of groups.values()) {
+    const stacked = group.length > 1
+    group.forEach((item, stackIndex) => {
+      const offset = stacked ? stackIndex * STACK_OFFSET_PX : 0
+      const base = cellStyle(item.cell)
+      result.push({
+        playerIndex: item.playerIndex,
+        pieceIndex: item.pieceIndex,
+        from: item.from,
+        style: {
+          left: `calc(${base.left} + ${offset}px)`,
+          top: `calc(${base.top} + ${offset}px)`,
+          zIndex: PIECE_BASE_Z_INDEX + (stacked ? stackIndex : 0),
+        },
+      })
+    })
+  }
+
+  return result
+})
 
 function cellCenter(cell: BoardCell): { cx: number, cy: number } {
   return { cx: cell.col + 0.5, cy: cell.row + 0.5 }
@@ -131,6 +205,20 @@ function colorClass(playerIndex: number) {
 
 function isValidMove(pieceIndex: number, from: LudoMoveFrom) {
   return moveActions.value.some((action) => action.pieceIndex === pieceIndex && action.from === from)
+}
+
+function canMovePiece(playerIndex: number, pieceIndex: number, from: LudoMoveFrom) {
+  return !isAiTurn.value && canControlPiece(state.value, playerIndex) && isValidMove(pieceIndex, from)
+}
+
+function pieceAriaLabel(playerIndex: number, pieceIndex: number, from: LudoMoveFrom) {
+  const name = props.players[playerIndex]?.displayName ?? `Spieler ${playerIndex + 1}`
+  const moveHint = canMovePiece(playerIndex, pieceIndex, from) ? ' ziehen' : ''
+  return `${name}, Figur ${pieceIndex + 1}, ${LOCATION_LABEL[from]}${moveHint}`
+}
+
+function fullyHomeCount(playerIndex: number) {
+  return state.value.pieces[playerIndex].filter((piece) => isFullyHome(piece)).length
 }
 
 function applyAction(action: LudoAction) {
@@ -277,15 +365,18 @@ onBeforeUnmount(() => {
           </svg>
 
           <button
-            v-for="piece in ringPieces"
-            :key="`ring-${piece.playerIndex}-${piece.pieceIndex}`"
+            v-for="piece in boardPieces"
+            :key="`piece-${piece.playerIndex}-${piece.pieceIndex}`"
             type="button"
             class="absolute z-10 flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition-[left,top,transform] duration-300 ease-out hover:scale-110 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] motion-reduce:transition-none sm:size-11"
-            :class="colorClass(piece.playerIndex)"
+            :class="[
+              colorClass(piece.playerIndex),
+              canMovePiece(piece.playerIndex, piece.pieceIndex, piece.from) ? 'ring-4 ring-[var(--color-accent)] scale-110' : '',
+            ]"
             :style="piece.style"
-            :disabled="isAiTurn || !canControlPiece(state, piece.playerIndex) || !isValidMove(piece.pieceIndex, 'ring')"
-            :aria-label="`${players[piece.playerIndex].displayName}, Figur ${piece.pieceIndex + 1}${canControlPiece(state, piece.playerIndex) && isValidMove(piece.pieceIndex, 'ring') ? ' ziehen' : ''}`"
-            @click="movePiece(piece.playerIndex, piece.pieceIndex, 'ring')"
+            :disabled="!canMovePiece(piece.playerIndex, piece.pieceIndex, piece.from)"
+            :aria-label="pieceAriaLabel(piece.playerIndex, piece.pieceIndex, piece.from)"
+            @click="movePiece(piece.playerIndex, piece.pieceIndex, piece.from)"
           >
             {{ piece.pieceIndex + 1 }}
           </button>
@@ -311,35 +402,7 @@ onBeforeUnmount(() => {
           :class="playerIndex === state.currentPlayerIndex ? 'bg-[#fff3c4] ring-[var(--color-accent)]' : 'bg-[var(--color-panel)] ring-[#dfbd8c]'"
         >
           <p class="font-bold">{{ player.displayName }}</p>
-          <div class="mt-3 grid grid-cols-4 gap-2">
-            <button
-              v-for="(piece, pieceIndex) in state.pieces[playerIndex].filter((piece) => isInYard(piece))"
-              :key="`yard-${playerIndex}-${pieceIndex}`"
-              type="button"
-              class="aspect-square rounded-xl border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition hover:scale-105 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-              :class="colorClass(playerIndex)"
-              :disabled="isAiTurn || !canControlPiece(state, playerIndex) || !isValidMove(state.pieces[playerIndex].indexOf(piece), 'yard')"
-              :aria-label="`${player.displayName}, Figur aus dem Haus ziehen`"
-              @click="movePiece(playerIndex, state.pieces[playerIndex].indexOf(piece), 'yard')"
-            >
-              ●
-            </button>
-            <span v-if="state.pieces[playerIndex].every((piece) => !isInYard(piece))" class="col-span-4 text-sm">Keine Figuren im Haus</span>
-          </div>
-          <div v-if="state.pieces[playerIndex].some((piece) => isInHome(piece))" class="mt-3 flex flex-wrap gap-2">
-            <button
-              v-for="piece in state.pieces[playerIndex].filter((piece) => isInHome(piece))"
-              :key="`home-${playerIndex}-${state.pieces[playerIndex].indexOf(piece)}`"
-              type="button"
-              class="rounded-full border-2 px-3 py-1 text-xs font-bold transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-              :class="colorClass(playerIndex)"
-              :disabled="isAiTurn || !canControlPiece(state, playerIndex) || !isValidMove(state.pieces[playerIndex].indexOf(piece), 'home')"
-              :aria-label="`${player.displayName}, Figur im Ziel weiterziehen`"
-              @click="movePiece(playerIndex, state.pieces[playerIndex].indexOf(piece), 'home')"
-            >
-              Ziel {{ piece.progress - 39 }}
-            </button>
-          </div>
+          <p class="mt-2 text-sm">{{ fullyHomeCount(playerIndex) }} im Ziel</p>
         </div>
       </aside>
     </div>
