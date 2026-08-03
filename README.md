@@ -24,6 +24,16 @@ Hot-Seat: abwechselnd am gleichen Gerät. Profile, KI-Gegner und lokale Wins.
 
 ## Start
 
+One-Click (Setup + Dev-Server + Browser):
+
+```bash
+./start.sh
+```
+
+Ohne Browser öffnen: `./start.sh --no-open`
+
+Manuell:
+
 ```bash
 bun install
 bun run dev
