@@ -116,6 +116,8 @@ export function createRacingGame(config: {
   let winnerSeatIndex: number | null = null
   let nextObstacleId = 1
   let nextSpawnAtMs = 0
+  /** Seats currently overlapping an obstacle — edge-trigger slowdown (no per-frame refresh). */
+  const collidingSeats = new Set<number>()
 
   function leaderProgress(): number {
     return state.cars.reduce((max, car) => Math.max(max, car.progress), 0)
@@ -153,13 +155,23 @@ export function createRacingGame(config: {
   }
 
   function resolveCollisions(): void {
+    const nowColliding = new Set<number>()
+
     for (const car of state.cars) {
-      for (const obstacle of state.obstacles) {
-        if (isOverlapping(car, obstacle)) {
-          applySlowdown(car)
-          break
-        }
+      const hit = state.obstacles.some((obstacle) => isOverlapping(car, obstacle))
+      if (!hit) {
+        continue
       }
+
+      nowColliding.add(car.seatIndex)
+      if (!collidingSeats.has(car.seatIndex)) {
+        applySlowdown(car)
+      }
+    }
+
+    collidingSeats.clear()
+    for (const seatIndex of nowColliding) {
+      collidingSeats.add(seatIndex)
     }
   }
 

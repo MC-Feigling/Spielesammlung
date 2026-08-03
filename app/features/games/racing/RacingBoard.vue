@@ -120,14 +120,14 @@ function tickLoop(timestamp: number): void {
 
   const previousPhase = game.state.phase
   game.tick(dt)
-  syncState()
 
-  if (previousPhase === 'countdown' && state.value.phase === 'racing' && !hasPlayedStart) {
+  if (previousPhase === 'countdown' && game.state.phase === 'racing' && !hasPlayedStart) {
     play('start')
     hasPlayedStart = true
   }
 
-  for (const car of state.value.cars) {
+  // Engine edge-triggers slowdown once per contact; still guard so hit SFX cannot spam.
+  for (const car of game.state.cars) {
     const previous = previousSlowdowns.get(car.seatIndex) ?? 0
     if (car.slowdownUntil > previous) {
       play('hit')
@@ -142,6 +142,7 @@ function tickLoop(timestamp: number): void {
       game.setLaneIntent(player.seatIndex, delta)
     }
   }
+
   syncState()
 
   const winnerSeat = game.getWinnerSeatIndex()

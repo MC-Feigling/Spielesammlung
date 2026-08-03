@@ -70,6 +70,30 @@ describe('racing engine', () => {
     expect(car.speed).toBeCloseTo(BASE_SPEED * speedMultForProgress(car.progress))
   })
 
+  it('does not refresh slowdownUntil while staying overlapped', () => {
+    const game = createRacingGame({
+      players: [{ seatIndex: 0, type: 'human' }],
+    })
+    game.state.phase = 'racing'
+    const car = game.state.cars[0]!
+    car.lane = 1
+    car.progress = 10
+    game.state.obstacles = [{ id: 1, lane: 1, progress: 10 }]
+
+    game.tick(16)
+    const firstSlowdownUntil = car.slowdownUntil
+    expect(firstSlowdownUntil).toBeGreaterThan(0)
+
+    // Stay overlapped for several frames without moving past the obstacle.
+    for (let i = 0; i < 3; i += 1) {
+      car.progress = 10
+      game.state.obstacles[0]!.progress = 10
+      game.tick(16)
+    }
+
+    expect(car.slowdownUntil).toBe(firstSlowdownUntil)
+  })
+
   it('increases car speed with own progress', () => {
     const game = createRacingGame({
       players: [{ seatIndex: 0, type: 'human' }],
