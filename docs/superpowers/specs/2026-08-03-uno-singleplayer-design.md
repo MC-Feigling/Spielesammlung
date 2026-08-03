@@ -1,7 +1,7 @@
 # UNO (Singleplayer vs AI) Design
 
 Date: 2026-08-03  
-Status: draft (awaiting rule approval)  
+Status: approved (implemented)  
 Scope: Neues Hot-Seat-Kartenspiel `uno` — 1 Mensch gegen bis zu 3 AI (Lobby 2–4 Sitze)
 
 ## Goal
