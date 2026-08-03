@@ -8,6 +8,16 @@ Kinderfreundliche Browser-Spielesammlung (2–4 Spieler, ein Laptop).
 - Bun (kein npm)
 - Ziel: elementaryOS, lokal im Browser
 
+## Befehle
+
+```bash
+bun install
+bun run dev
+bun run test
+bun run build
+bun run preview
+```
+
 ## Spec
 
 Siehe `docs/superpowers/specs/2026-08-03-kinder-spielesammlung-design.md`

@@ -1,35 +1,28 @@
-# Nuxt Minimal Starter
+# Spielesammlung
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Kinderfreundliche Browser-Spielesammlung für 2–4 Spieler an einem Laptop.
 
-## Setup
+## Voraussetzungen
 
-Install dependencies:
+- elementaryOS oder eine andere aktuelle Linux-Distribution
+- [Bun](https://bun.sh)
+- Firefox oder Chrome
+
+## Start
 
 ```bash
 bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
 bun run dev
 ```
 
-## Production
+Danach `http://localhost:3000` im Browser öffnen.
 
-Build the application for production:
+## Prüfung und Produktion
 
 ```bash
+bun run test
 bun run build
-```
-
-Locally preview production build:
-
-```bash
 bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Nur Bun verwenden. Kein npm, yarn oder pnpm.
