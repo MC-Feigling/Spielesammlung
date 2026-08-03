@@ -3,7 +3,15 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
 import { chooseKniffelAction } from './ai'
 import { createKniffelGame, type KniffelAction, type KniffelGameState } from './engine'
-import { KNIFFEL_CATEGORIES, KNIFFEL_CATEGORY_LABELS, type KniffelCategory } from './scoring'
+import {
+  KNIFFEL_CATEGORIES,
+  KNIFFEL_CATEGORY_LABELS,
+  UPPER_CATEGORIES,
+  type KniffelCategory,
+  totalScore,
+  upperBonus,
+  upperSum,
+} from './scoring'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -32,9 +40,12 @@ const validCategories = computed(() => new Set(
     .filter((action): action is Extract<KniffelAction, { type: 'score' }> => action.type === 'score')
     .map((action) => action.category),
 ))
-const playerTotals = computed(() => state.value.scoreSheets.map((scoreSheet) => (
-  Object.values(scoreSheet).reduce((total, score) => total + (score ?? 0), 0)
-)))
+const playerTotals = computed(() => state.value.scoreSheets.map((scoreSheet) => totalScore(scoreSheet)))
+const playerUpperSums = computed(() => state.value.scoreSheets.map((scoreSheet) => upperSum(scoreSheet)))
+const playerUpperBonuses = computed(() => state.value.scoreSheets.map((scoreSheet) => upperBonus(scoreSheet)))
+const lowerCategories = computed(() =>
+  KNIFFEL_CATEGORIES.filter((category) => !UPPER_CATEGORIES.includes(category)),
+)
 
 function applyAction(action: KniffelAction) {
   const result = game.applyAction(action)
@@ -140,7 +151,34 @@ onBeforeUnmount(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="category in KNIFFEL_CATEGORIES" :key="category" class="border-t border-[#dfbd8c]">
+              <tr v-for="category in UPPER_CATEGORIES" :key="category" class="border-t border-[#dfbd8c]">
+                <th scope="row" class="px-4 py-2 text-sm font-bold">{{ KNIFFEL_CATEGORY_LABELS[category] }}</th>
+                <td v-for="(player, playerIndex) in players" :key="player.seatIndex" class="px-3 py-2 text-center">
+                  <AppButton
+                    v-if="playerIndex === state.currentPlayerIndex && state.scoreSheets[playerIndex][category] === undefined"
+                    variant="ghost"
+                    class="min-h-9 px-2 py-1 text-xs"
+                    :disabled="isAiTurn || !validCategories.has(category)"
+                    @click="score(category)"
+                  >
+                    Eintragen
+                  </AppButton>
+                  <span v-else>{{ state.scoreSheets[playerIndex][category] ?? '–' }}</span>
+                </td>
+              </tr>
+              <tr class="border-t-2 border-[#c48a4a] bg-[#fffaf0] font-bold">
+                <th scope="row" class="px-4 py-2 text-sm">Summe oben</th>
+                <td v-for="(player, playerIndex) in players" :key="`upper-${player.seatIndex}`" class="px-3 py-2 text-center">
+                  {{ playerUpperSums[playerIndex] }}
+                </td>
+              </tr>
+              <tr class="border-t border-[#dfbd8c] bg-[#fffaf0] font-bold">
+                <th scope="row" class="px-4 py-2 text-sm">Bonus (+35 ab 63)</th>
+                <td v-for="(player, playerIndex) in players" :key="`bonus-${player.seatIndex}`" class="px-3 py-2 text-center">
+                  {{ playerUpperBonuses[playerIndex] }}
+                </td>
+              </tr>
+              <tr v-for="category in lowerCategories" :key="category" class="border-t border-[#dfbd8c]">
                 <th scope="row" class="px-4 py-2 text-sm font-bold">{{ KNIFFEL_CATEGORY_LABELS[category] }}</th>
                 <td v-for="(player, playerIndex) in players" :key="player.seatIndex" class="px-3 py-2 text-center">
                   <AppButton

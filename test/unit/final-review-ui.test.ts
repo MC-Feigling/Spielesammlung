@@ -57,4 +57,13 @@ describe('final review UI fixes', () => {
     expect(validActions).toMatch(/state\.value/)
     expect(validActions).toMatch(/getValidActions\(\)/)
   })
+
+  it('shows Kniffel Summe oben and Bonus rows', () => {
+    const kniffelBoard = readSource('app/features/games/kniffel/KniffelBoard.vue')
+    expect(kniffelBoard).toContain('Summe oben')
+    expect(kniffelBoard).toContain('Bonus (+35 ab 63)')
+    expect(kniffelBoard).toContain('upperSum')
+    expect(kniffelBoard).toContain('upperBonus')
+    expect(kniffelBoard).toContain('totalScore')
+  })
 })
