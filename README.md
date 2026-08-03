@@ -2,11 +2,25 @@
 
 Kinderfreundliche Browser-Spielesammlung für 2–4 Spieler an einem Laptop.
 
-## Voraussetzungen
+Hot-Seat: abwechselnd am gleichen Gerät. Profile, KI-Gegner und lokale Wins.
 
-- elementaryOS oder eine andere aktuelle Linux-Distribution
-- [Bun](https://bun.sh)
-- Firefox oder Chrome
+## Spiele
+
+| Spiel | Spieler | Kurz |
+| --- | --- | --- |
+| Memory | 2–4 | Paare finden |
+| Kniffel | 2–4 | Würfel und Punkte (Custom-Score) |
+| Mensch ärgere dich nicht | 2–4 | Figuren ins Ziel, Gegner rauswerfen |
+| Spurrennen | 2–4 | Ausweichen und zuerst ins Ziel |
+| UNO | 2–4 | Karten ablegen, allein gegen KI möglich |
+| Vier gewinnt | 2 | 4 in einer Reihe |
+| Shut the Box | 2–4 | Zahlen zuklappen |
+
+## Stack
+
+- Nuxt 4, Vue 3 Composition API, TypeScript, TailwindCSS, Pinia
+- Bun (kein npm, yarn oder pnpm)
+- Ziel: elementaryOS, lokal im Browser (Firefox oder Chrome)
 
 ## Start
 
@@ -25,4 +39,6 @@ bun run build
 bun run preview
 ```
 
-Nur Bun verwenden. Kein npm, yarn oder pnpm.
+## Branch
+
+Arbeit auf `dev`.
