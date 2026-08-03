@@ -10,3 +10,6 @@ export const LUDO_EASY_BLUNDER_RATE = 0.5
 
 /** Chance that easy Kniffel AI skips the best score. */
 export const KNIFFEL_EASY_BLUNDER_RATE = 0.4
+
+/** Chance that easy UNO AI picks a random legal action. */
+export const UNO_EASY_BLUNDER_RATE = 0.45
