@@ -86,6 +86,7 @@ onBeforeUnmount(() => {
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
       :is-ai="isAiTurn"
+      :hint="isAiTurn ? 'Die KI würfelt…' : 'Würfle und trage Punkte ein.'"
     />
 
     <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,1.4fr)]">

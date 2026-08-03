@@ -103,6 +103,7 @@ onBeforeUnmount(() => {
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
       :is-ai="isAiTurn"
+      :hint="isAiTurn ? 'Die Karten werden gleich aufgedeckt.' : 'Finde zwei gleiche Karten.'"
     />
 
     <div class="mt-6 grid gap-2 sm:gap-3" :style="gridStyle">

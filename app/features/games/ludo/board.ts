@@ -29,3 +29,7 @@ export function isInYard(piece: LudoPiece): boolean {
 export function isInHome(piece: LudoPiece): boolean {
   return piece.progress >= LUDO_HOME_START_PROGRESS
 }
+
+export function isFullyHome(piece: LudoPiece): boolean {
+  return piece.progress === LUDO_HOME_END_PROGRESS
+}

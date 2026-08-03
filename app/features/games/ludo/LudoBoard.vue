@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
-import { getRingIndex, isInHome, isInYard, LUDO_PLAYER_COLORS, type LudoPlayerColor } from './board'
+import { getRingIndex, isFullyHome, isInHome, isInYard, LUDO_PLAYER_COLORS, type LudoPlayerColor } from './board'
 import { chooseLudoAction } from './ai'
 import { canControlPiece, createLudoGame, type LudoAction, type LudoGameState, type LudoMoveFrom } from './engine'
 
@@ -105,6 +105,7 @@ onBeforeUnmount(() => {
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
       :is-ai="isAiTurn"
+      :hint="isAiTurn ? 'Die KI zieht…' : 'Würfle und ziehe deine Figur.'"
     />
 
     <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_15rem]">
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
           <div class="absolute inset-[18%] grid grid-cols-2 gap-3 rounded-3xl bg-[#fff3c4] p-4 text-center shadow-inner sm:p-6">
             <div v-for="(player, playerIndex) in players" :key="player.seatIndex" class="flex flex-col items-center justify-center rounded-2xl bg-white/75 p-2">
               <span class="text-xs font-bold">{{ player.displayName }}</span>
-              <span class="mt-1 text-xs">{{ state.pieces[playerIndex].filter((piece) => isInHome(piece)).length }} im Ziel</span>
+              <span class="mt-1 text-xs">{{ state.pieces[playerIndex].filter((piece) => isFullyHome(piece)).length }} im Ziel</span>
             </div>
           </div>
 
