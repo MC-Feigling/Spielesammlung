@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
             type="button"
             class="flex min-h-12 items-center justify-center rounded-2xl border-4 px-4 py-4 text-lg font-black shadow-[0_3px_0_#4c3424] transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
             :class="COLOR_BUTTON_CLASSES[color]"
-            :aria-label={`Farbe ${COLOR_LABELS[color]}`}
+            :aria-label="'Farbe ' + COLOR_LABELS[color]"
             @click="chooseWildColor(color)"
           >
             {{ COLOR_LABELS[color] }}
