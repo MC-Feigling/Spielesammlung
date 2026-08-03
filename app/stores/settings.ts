@@ -11,7 +11,18 @@ function load(): Settings {
     const raw = localStorage.getItem(STORAGE_SETTINGS)
     if (!raw) return { ...DEFAULTS }
 
-    return { ...DEFAULTS, ...JSON.parse(raw) as Partial<Settings> }
+    const parsed = JSON.parse(raw) as Partial<Settings>
+    const settings = { ...DEFAULTS }
+
+    if (typeof parsed.soundEnabled === 'boolean') {
+      settings.soundEnabled = parsed.soundEnabled
+    }
+
+    if (parsed.uiScale === 'large' || parsed.uiScale === 'compact') {
+      settings.uiScale = parsed.uiScale
+    }
+
+    return settings
   } catch {
     return { ...DEFAULTS }
   }

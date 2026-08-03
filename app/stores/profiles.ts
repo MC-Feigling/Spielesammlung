@@ -3,6 +3,20 @@ import { withWin } from '~/features/profiles/wins'
 import type { GameId } from '~/types/game'
 import type { Profile } from '~/types/profile'
 
+function isValidProfile(item: unknown): item is Profile {
+  if (!item || typeof item !== 'object') return false
+
+  const profile = item as Record<string, unknown>
+  return (
+    typeof profile.id === 'string'
+    && typeof profile.name === 'string'
+    && typeof profile.avatarId === 'string'
+    && typeof profile.wins === 'object'
+    && profile.wins !== null
+    && !Array.isArray(profile.wins)
+  )
+}
+
 function loadProfiles(): Profile[] {
   if (!import.meta.client) return []
 
@@ -10,7 +24,10 @@ function loadProfiles(): Profile[] {
     const raw = localStorage.getItem(STORAGE_PROFILES)
     if (!raw) return []
 
-    return JSON.parse(raw) as Profile[]
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter(isValidProfile)
   } catch {
     return []
   }
@@ -46,7 +63,15 @@ export const useProfilesStore = defineStore('profiles', () => {
   }
 
   function updateProfile(id: string, patch: Partial<Pick<Profile, 'name' | 'avatarId' | 'favoriteGameId'>>) {
-    profiles.value = profiles.value.map((profile) => (profile.id === id ? { ...profile, ...patch } : profile))
+    const nextPatch = { ...patch }
+
+    if (patch.name !== undefined) {
+      const name = patch.name.trim()
+      if (!name) throw new Error('Name erforderlich')
+      nextPatch.name = name
+    }
+
+    profiles.value = profiles.value.map((profile) => (profile.id === id ? { ...profile, ...nextPatch } : profile))
     saveProfiles(profiles.value)
   }
 
