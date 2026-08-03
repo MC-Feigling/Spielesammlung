@@ -19,7 +19,7 @@ const model = defineModel<AvatarId>({ required: true })
         : 'border-transparent bg-white/70 hover:border-[var(--color-wood)] hover:bg-white'"
       @click="model = avatar.id"
     >
-      <img :src="avatar.src" :alt="" class="h-12 w-12" />
+      <img :src="avatar.src" alt="" class="h-12 w-12">
       <span class="text-sm font-bold">{{ avatar.label }}</span>
     </button>
   </div>
