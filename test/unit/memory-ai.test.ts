@@ -15,8 +15,8 @@ function createState(faceUpCardIndexes: number[]): MemoryGameState {
 }
 
 describe('memory AI', () => {
-  it('selects a remembered matching card before unknown cards', () => {
-    const ai = createMemoryAi(() => 0.99)
+  it('selects a remembered matching card before unknown cards on hard', () => {
+    const ai = createMemoryAi({ random: () => 0.99, difficulty: 'hard' })
 
     ai.observe(createState([0]))
     ai.observe(createState([2]))
@@ -24,8 +24,8 @@ describe('memory AI', () => {
     expect(ai.chooseAction(createState([2]))).toEqual({ type: 'flip', cardIndex: 0 })
   })
 
-  it('prefers the face-up card partner over another known pair', () => {
-    const ai = createMemoryAi()
+  it('prefers the face-up card partner over another known pair on hard', () => {
+    const ai = createMemoryAi({ difficulty: 'hard' })
 
     ai.observe(createState([1]))
     ai.observe(createState([3]))
@@ -35,10 +35,28 @@ describe('memory AI', () => {
   })
 
   it('selects an unseen card when no remembered pair exists', () => {
-    const ai = createMemoryAi(() => 0)
+    const ai = createMemoryAi({ random: () => 0, difficulty: 'hard' })
 
     ai.observe(createState([0]))
 
     expect(ai.chooseAction(createState([]))).toEqual({ type: 'flip', cardIndex: 1 })
+  })
+
+  it('defaults to easy and sometimes forgets a known match', () => {
+    const ai = createMemoryAi({ random: () => 0 })
+
+    ai.observe(createState([0]))
+    ai.observe(createState([2]))
+
+    expect(ai.chooseAction(createState([2]))).toEqual({ type: 'flip', cardIndex: 1 })
+  })
+
+  it('still uses a known match on easy when forget roll misses', () => {
+    const ai = createMemoryAi({ random: () => 0.99 })
+
+    ai.observe(createState([0]))
+    ai.observe(createState([2]))
+
+    expect(ai.chooseAction(createState([2]))).toEqual({ type: 'flip', cardIndex: 0 })
   })
 })

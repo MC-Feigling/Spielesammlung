@@ -87,8 +87,8 @@ describe('ludo engine', () => {
 })
 
 describe('ludo AI', () => {
-  it('prioritizes a capture over entering a piece from the yard', () => {
-    const game = createLudoGameFromState({
+  function captureScenario() {
+    return createLudoGameFromState({
       playerCount: 2,
       currentPlayerIndex: 0,
       pendingRoll: 6,
@@ -97,11 +97,29 @@ describe('ludo AI', () => {
         [{ progress: 1 }, { progress: -1 }, { progress: -1 }, { progress: -1 }],
       ],
     })
+  }
 
-    expect(chooseLudoAction(game.getState(), game.getValidActions())).toEqual({
+  it('prioritizes a capture over entering a piece from the yard on hard', () => {
+    const game = captureScenario()
+
+    expect(chooseLudoAction(game.getState(), game.getValidActions(), {
+      difficulty: 'hard',
+    })).toEqual({
       type: 'move',
       pieceIndex: 0,
       from: 'ring',
+    })
+  })
+
+  it('defaults to easy and may skip the optimal capture', () => {
+    const game = captureScenario()
+
+    expect(chooseLudoAction(game.getState(), game.getValidActions(), {
+      random: () => 0,
+    })).toEqual({
+      type: 'move',
+      pieceIndex: 1,
+      from: 'yard',
     })
   })
 })

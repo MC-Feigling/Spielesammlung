@@ -15,24 +15,28 @@ function createState(overrides: Partial<KniffelGameState> = {}): KniffelGameStat
 
 describe('kniffel AI', () => {
   it('rolls until the third roll', () => {
-    expect(chooseKniffelAction(createState({ rollsUsed: 1 }))).toEqual({ type: 'roll' })
+    expect(chooseKniffelAction(createState({ rollsUsed: 1 }), { difficulty: 'hard' })).toEqual({
+      type: 'roll',
+    })
   })
 
-  it('prefers an available Kniffel', () => {
-    expect(chooseKniffelAction(createState({ dice: [6, 6, 6, 6, 6] }))).toEqual({
+  it('prefers an available Kniffel on hard', () => {
+    expect(chooseKniffelAction(createState({ dice: [6, 6, 6, 6, 6] }), {
+      difficulty: 'hard',
+    })).toEqual({
       type: 'score',
       category: 'kniffel',
     })
   })
 
-  it('chooses the highest positive available score', () => {
-    expect(chooseKniffelAction(createState())).toEqual({
+  it('chooses the highest positive available score on hard', () => {
+    expect(chooseKniffelAction(createState(), { difficulty: 'hard' })).toEqual({
       type: 'score',
       category: 'manyPips',
     })
   })
 
-  it('strikes the lowest-opportunity category without positive scores', () => {
+  it('strikes the lowest-opportunity category without positive scores on hard', () => {
     expect(chooseKniffelAction(createState({
       dice: [1, 2, 3, 3, 5],
       scoreSheets: [{
@@ -46,9 +50,16 @@ describe('kniffel AI', () => {
         manyPips: 0,
         fewPips: 0,
       }, {}],
-    }))).toEqual({
+    }), { difficulty: 'hard' })).toEqual({
       type: 'score',
       category: 'threeOfKind',
+    })
+  })
+
+  it('defaults to easy and may skip the best positive score', () => {
+    expect(chooseKniffelAction(createState(), { random: () => 0 })).toEqual({
+      type: 'score',
+      category: 'ones',
     })
   })
 })

@@ -107,7 +107,7 @@ interface Session {
 ### Memory
 
 - Grid size selectable (e.g. 4×3 / 4×4) — layout choice, same match rules
-- AI: random + remembered cards heuristic
+- AI: default `easy` (sometimes forgets known matches); `hard` = full memory heuristic
 
 ### Kniffel (custom scores)
 
@@ -122,12 +122,12 @@ Classic sheet **plus**:
 
 - Rest classic: ones–sixes, three/four of a kind, full house, small/large straight
 - 5 dice, up to 3 rolls per turn
-- AI: simple category heuristic
+- AI: default `easy` (sometimes skips best category); `hard` = best-score heuristic
 
 ### Mensch ärgere dich nicht (Ludo)
 
 - 2–4 colors, standard rules (enter on 6, capture, home stretch)
-- AI priorities: capture → enter home → advance
+- AI: default `easy` (sometimes skips optimal move); `hard` = capture → enter home → advance
 - Animated piece moves
 
 ## Visual direction
