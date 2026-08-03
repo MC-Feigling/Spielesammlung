@@ -32,6 +32,17 @@ export function createMemoryAi(random: () => number = Math.random): MemoryAi {
 
     if (availableIndexes.length === 0) return null
 
+    const faceUpCardIndex = state.faceUpCardIndexes[0]
+    if (faceUpCardIndex !== undefined) {
+      const faceUpPairId = state.cards[faceUpCardIndex]
+      const knownPartnerIndex = [...(seenCards.get(faceUpPairId) ?? [])]
+        .find((cardIndex) => availableIndexes.includes(cardIndex))
+
+      if (knownPartnerIndex !== undefined) {
+        return { type: 'flip', cardIndex: knownPartnerIndex }
+      }
+    }
+
     for (const [pairId, indexes] of seenCards) {
       if (matchedPairIds.has(pairId) || indexes.size < 2) continue
 
@@ -41,8 +52,12 @@ export function createMemoryAi(random: () => number = Math.random): MemoryAi {
       }
     }
 
-    const randomIndex = Math.floor(random() * availableIndexes.length)
-    return { type: 'flip', cardIndex: availableIndexes[Math.min(randomIndex, availableIndexes.length - 1)] }
+    const unseenIndexes = availableIndexes.filter((cardIndex) => (
+      ![...seenCards.values()].some((indexes) => indexes.has(cardIndex))
+    ))
+    const randomIndexes = unseenIndexes.length > 0 ? unseenIndexes : availableIndexes
+    const randomIndex = Math.floor(random() * randomIndexes.length)
+    return { type: 'flip', cardIndex: randomIndexes[Math.min(randomIndex, randomIndexes.length - 1)] }
   }
 
   return { observe, chooseAction }

@@ -24,12 +24,21 @@ describe('memory AI', () => {
     expect(ai.chooseAction(createState([2]))).toEqual({ type: 'flip', cardIndex: 0 })
   })
 
-  it('selects an unknown card when no remembered pair exists', () => {
+  it('prefers the face-up card partner over another known pair', () => {
+    const ai = createMemoryAi()
+
+    ai.observe(createState([1]))
+    ai.observe(createState([3]))
+    ai.observe(createState([2]))
+
+    expect(ai.chooseAction(createState([0]))).toEqual({ type: 'flip', cardIndex: 2 })
+  })
+
+  it('selects an unseen card when no remembered pair exists', () => {
     const ai = createMemoryAi(() => 0)
-    const state = createState([])
 
-    ai.observe(state)
+    ai.observe(createState([0]))
 
-    expect(ai.chooseAction(state)).toEqual({ type: 'flip', cardIndex: 0 })
+    expect(ai.chooseAction(createState([]))).toEqual({ type: 'flip', cardIndex: 1 })
   })
 })
