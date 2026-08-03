@@ -139,3 +139,10 @@ export function scoreCategory(category: KniffelCategory, dice: readonly number[]
       return total <= 10 ? 40 : 0
   }
 }
+
+export function previewCategoryScore(
+  category: KniffelCategory,
+  dice: readonly number[],
+): number {
+  return scoreCategory(category, dice)
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  previewCategoryScore,
   scoreCategory,
   totalScore,
   upperBonus,
@@ -100,5 +101,19 @@ describe('kniffel upper bonus', () => {
 
   it('totalScore without bonus equals category sum', () => {
     expect(totalScore({ ones: 3, chance: 12 })).toBe(15)
+  })
+})
+
+describe('previewCategoryScore', () => {
+  it('returns positive points for matching combinations', () => {
+    expect(previewCategoryScore('fullHouse', [2, 2, 3, 3, 3])).toBe(25)
+    expect(previewCategoryScore('kniffel', [6, 6, 6, 6, 6])).toBe(60)
+    expect(previewCategoryScore('ones', [1, 1, 2, 3, 4])).toBe(2)
+  })
+
+  it('returns zero when the combination does not match', () => {
+    expect(previewCategoryScore('fullHouse', [1, 2, 3, 4, 5])).toBe(0)
+    expect(previewCategoryScore('kniffel', [1, 1, 1, 1, 2])).toBe(0)
+    expect(previewCategoryScore('ones', [2, 3, 4, 5, 6])).toBe(0)
   })
 })

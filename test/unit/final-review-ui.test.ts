@@ -66,4 +66,19 @@ describe('final review UI fixes', () => {
     expect(kniffelBoard).toContain('upperBonus')
     expect(kniffelBoard).toContain('totalScore')
   })
+
+  it('shows Kniffel score preview and Streichen buttons', () => {
+    const kniffelBoard = readSource('app/features/games/kniffel/KniffelBoard.vue')
+    expect(kniffelBoard).toContain('previewCategoryScore')
+    expect(kniffelBoard).toContain('Streichen')
+    expect(kniffelBoard).toContain('categoryButtonLabel')
+    expect(kniffelBoard).toContain('categoryButtonVariant')
+    expect(kniffelBoard).toContain("'danger'")
+  })
+
+  it('supports AppButton danger variant', () => {
+    const button = readSource('app/components/ui/AppButton.vue')
+    expect(button).toContain("'danger'")
+    expect(button).toMatch(/type ButtonVariant = .*danger/)
+  })
 })

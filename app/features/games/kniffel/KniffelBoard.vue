@@ -8,6 +8,7 @@ import {
   KNIFFEL_CATEGORY_LABELS,
   UPPER_CATEGORIES,
   type KniffelCategory,
+  previewCategoryScore,
   totalScore,
   upperBonus,
   upperSum,
@@ -71,6 +72,29 @@ function toggleHold(dieIndex: number) {
 function score(category: KniffelCategory) {
   if (isAiTurn.value || !validCategories.value.has(category)) return
   applyAction({ type: 'score', category })
+}
+
+function canPreviewScores(): boolean {
+  return state.value.dice.length === 5 && state.value.rollsUsed > 0
+}
+
+function categoryPreview(category: KniffelCategory): number | null {
+  if (!canPreviewScores() || !validCategories.value.has(category)) return null
+  return previewCategoryScore(category, state.value.dice)
+}
+
+function categoryButtonLabel(category: KniffelCategory): string {
+  const preview = categoryPreview(category)
+  if (preview === null) return 'Eintragen'
+  if (preview === 0) return 'Streichen'
+  return String(preview)
+}
+
+function categoryButtonVariant(category: KniffelCategory): 'primary' | 'ghost' | 'danger' {
+  const preview = categoryPreview(category)
+  if (preview === null) return 'ghost'
+  if (preview === 0) return 'danger'
+  return 'primary'
 }
 
 function scheduleAiAction() {
@@ -156,12 +180,12 @@ onBeforeUnmount(() => {
                 <td v-for="(player, playerIndex) in players" :key="player.seatIndex" class="px-3 py-2 text-center">
                   <AppButton
                     v-if="playerIndex === state.currentPlayerIndex && state.scoreSheets[playerIndex][category] === undefined"
-                    variant="ghost"
+                    :variant="categoryButtonVariant(category)"
                     class="min-h-9 px-2 py-1 text-xs"
                     :disabled="isAiTurn || !validCategories.has(category)"
                     @click="score(category)"
                   >
-                    Eintragen
+                    {{ categoryButtonLabel(category) }}
                   </AppButton>
                   <span v-else>{{ state.scoreSheets[playerIndex][category] ?? '–' }}</span>
                 </td>
@@ -183,12 +207,12 @@ onBeforeUnmount(() => {
                 <td v-for="(player, playerIndex) in players" :key="player.seatIndex" class="px-3 py-2 text-center">
                   <AppButton
                     v-if="playerIndex === state.currentPlayerIndex && state.scoreSheets[playerIndex][category] === undefined"
-                    variant="ghost"
+                    :variant="categoryButtonVariant(category)"
                     class="min-h-9 px-2 py-1 text-xs"
                     :disabled="isAiTurn || !validCategories.has(category)"
                     @click="score(category)"
                   >
-                    Eintragen
+                    {{ categoryButtonLabel(category) }}
                   </AppButton>
                   <span v-else>{{ state.scoreSheets[playerIndex][category] ?? '–' }}</span>
                 </td>
