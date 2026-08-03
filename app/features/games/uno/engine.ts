@@ -69,6 +69,10 @@ function isNumberRank(rank: UnoRank): boolean {
   return (NUMBER_RANKS as readonly string[]).includes(rank)
 }
 
+function isWildRank(rank: UnoRank): boolean {
+  return rank === 'wild' || rank === 'wildDrawFour'
+}
+
 function buildDeck(): UnoCard[] {
   const cards: UnoCard[] = []
   let nextId = 0
@@ -162,11 +166,174 @@ function winnerSeatIndexes(state: UnoGameState): number[] {
   return state.hands.flatMap((hand, seatIndex) => (hand.length === 0 ? [seatIndex] : []))
 }
 
-export function createUnoGame(options: UnoGameOptions): GameEngine<UnoGameState, UnoAction> {
-  validatePlayerCount(options.playerCount)
+function topDiscard(state: UnoGameState): UnoCard {
+  const top = state.discardPile[state.discardPile.length - 1]
+  if (!top) throw new Error('Ablagestapel ist leer')
+  return top
+}
 
-  const random = createSeededRandom(options.seed ?? Date.now())
-  let state = dealInitialState(options.playerCount, random)
+export function isLegalPlay(
+  card: UnoCard,
+  _top: UnoCard,
+  currentColor: UnoColor,
+  pendingDrawCount: number,
+  pendingDrawKind: UnoPendingDrawKind | null,
+): boolean {
+  if (pendingDrawCount > 0) {
+    if (pendingDrawKind === 'wildDrawFour') {
+      return card.rank === 'wildDrawFour'
+    }
+    if (pendingDrawKind === 'drawTwo') {
+      return card.rank === 'drawTwo' || card.rank === 'wildDrawFour'
+    }
+    return false
+  }
+
+  if (isWildRank(card.rank)) return true
+  if (card.color === currentColor) return true
+  if (card.rank === _top.rank) return true
+  return false
+}
+
+function nextPlayerIndex(state: UnoGameState, steps: number): number {
+  const count = state.playerCount
+  const raw = state.currentPlayerIndex + state.direction * steps
+  return ((raw % count) + count) % count
+}
+
+function ensureDrawPile(state: UnoGameState, random: () => number): void {
+  if (state.drawPile.length > 0) return
+  if (state.discardPile.length <= 1) {
+    throw new Error('Keine Karten mehr zum Ziehen')
+  }
+
+  const top = state.discardPile[state.discardPile.length - 1]!
+  const rest = state.discardPile.slice(0, -1)
+  state.discardPile = [top]
+  state.drawPile = shuffle(rest, random)
+}
+
+function takeCards(state: UnoGameState, count: number, random: () => number): UnoCard[] {
+  const drawn: UnoCard[] = []
+
+  for (let index = 0; index < count; index += 1) {
+    ensureDrawPile(state, random)
+    const card = state.drawPile.shift()
+    if (!card) throw new Error('Keine Karten mehr zum Ziehen')
+    drawn.push(card)
+  }
+
+  return drawn
+}
+
+function applyPlayEffects(
+  state: UnoGameState,
+  card: UnoCard,
+  chosenColor: UnoColor | undefined,
+): void {
+  switch (card.rank) {
+    case 'skip': {
+      state.currentColor = card.color as UnoColor
+      state.currentPlayerIndex = nextPlayerIndex(state, 2)
+      break
+    }
+    case 'reverse': {
+      state.currentColor = card.color as UnoColor
+      state.direction = state.direction === 1 ? -1 : 1
+      const steps = state.playerCount === 2 ? 2 : 1
+      state.currentPlayerIndex = nextPlayerIndex(state, steps)
+      break
+    }
+    case 'drawTwo': {
+      state.currentColor = card.color as UnoColor
+      state.pendingDrawCount += 2
+      if (state.pendingDrawKind !== 'wildDrawFour') {
+        state.pendingDrawKind = 'drawTwo'
+      }
+      state.currentPlayerIndex = nextPlayerIndex(state, 1)
+      break
+    }
+    case 'wild': {
+      if (!chosenColor) throw new Error('Wild braucht eine Farbwahl')
+      state.currentColor = chosenColor
+      state.currentPlayerIndex = nextPlayerIndex(state, 1)
+      break
+    }
+    case 'wildDrawFour': {
+      if (!chosenColor) throw new Error('Wild+4 braucht eine Farbwahl')
+      state.currentColor = chosenColor
+      state.pendingDrawCount += 4
+      state.pendingDrawKind = 'wildDrawFour'
+      state.currentPlayerIndex = nextPlayerIndex(state, 1)
+      break
+    }
+    default: {
+      state.currentColor = card.color as UnoColor
+      state.currentPlayerIndex = nextPlayerIndex(state, 1)
+      break
+    }
+  }
+}
+
+function playCardFromHand(
+  state: UnoGameState,
+  cardId: string,
+  chosenColor: UnoColor | undefined,
+): void {
+  const hand = state.hands[state.currentPlayerIndex]
+  if (!hand) throw new Error('Ungültiger Spieler')
+
+  const cardIndex = hand.findIndex((card) => card.id === cardId)
+  if (cardIndex < 0) throw new Error('Karte nicht auf der Hand')
+
+  const card = hand[cardIndex]!
+  const top = topDiscard(state)
+
+  if (!isLegalPlay(card, top, state.currentColor, state.pendingDrawCount, state.pendingDrawKind)) {
+    throw new Error('Zug ist nicht erlaubt')
+  }
+
+  if (isWildRank(card.rank) && !chosenColor) {
+    throw new Error('Wild braucht eine Farbwahl')
+  }
+
+  if (!isWildRank(card.rank) && chosenColor !== undefined) {
+    throw new Error('Farbwahl nur bei Wild-Karten')
+  }
+
+  hand.splice(cardIndex, 1)
+  state.discardPile.push(card)
+
+  if (hand.length === 0) return
+
+  applyPlayEffects(state, card, chosenColor)
+}
+
+function listPlayActions(state: UnoGameState): UnoAction[] {
+  const hand = state.hands[state.currentPlayerIndex] ?? []
+  const top = topDiscard(state)
+  const actions: UnoAction[] = []
+
+  for (const card of hand) {
+    if (!isLegalPlay(card, top, state.currentColor, state.pendingDrawCount, state.pendingDrawKind)) {
+      continue
+    }
+
+    if (isWildRank(card.rank)) {
+      for (const color of COLORS) {
+        actions.push({ type: 'play', cardId: card.id, chosenColor: color })
+      }
+    }
+    else {
+      actions.push({ type: 'play', cardId: card.id })
+    }
+  }
+
+  return actions
+}
+
+function createGame(initialState: UnoGameState, random: () => number): GameEngine<UnoGameState, UnoAction> {
+  let state = cloneState(initialState)
 
   function isTerminal(): boolean {
     return winnerSeatIndexes(state).length > 0
@@ -178,14 +345,71 @@ export function createUnoGame(options: UnoGameOptions): GameEngine<UnoGameState,
 
   function getValidActions(): UnoAction[] {
     if (isTerminal()) return []
-    return []
+
+    const plays = listPlayActions(state)
+
+    if (state.pendingDrawCount > 0) {
+      return [...plays, { type: 'draw' }]
+    }
+
+    if (plays.length > 0) return plays
+    return [{ type: 'draw' }]
   }
 
-  function applyAction(_action: UnoAction): EngineResult<UnoGameState> {
+  function applyAction(action: UnoAction): EngineResult<UnoGameState> {
     if (isTerminal()) {
       throw new Error('Das Spiel ist bereits beendet')
     }
-    throw new Error('UNO-Züge sind in Phase 1 noch nicht implementiert')
+
+    const valid = getValidActions()
+    const isValid = valid.some((candidate) => {
+      if (candidate.type !== action.type) return false
+      if (action.type === 'draw') return true
+      return candidate.type === 'play'
+        && action.type === 'play'
+        && candidate.cardId === action.cardId
+        && candidate.chosenColor === action.chosenColor
+    })
+
+    if (!isValid) {
+      throw new Error('Zug ist nicht erlaubt')
+    }
+
+    if (action.type === 'draw') {
+      if (state.pendingDrawCount > 0) {
+        const penalty = state.pendingDrawCount
+        const drawn = takeCards(state, penalty, random)
+        state.hands[state.currentPlayerIndex]!.push(...drawn)
+        state.pendingDrawCount = 0
+        state.pendingDrawKind = null
+        state.currentPlayerIndex = nextPlayerIndex(state, 1)
+        return result()
+      }
+
+      const [drawn] = takeCards(state, 1, random)
+      if (!drawn) throw new Error('Keine Karten mehr zum Ziehen')
+
+      const hand = state.hands[state.currentPlayerIndex]!
+      const top = topDiscard(state)
+      const canPlay = isLegalPlay(drawn, top, state.currentColor, 0, null)
+
+      if (canPlay) {
+        // After draw: auto-play legal non-wild with effects.
+        // Wild / Wild+4 also auto-play; chosenColor = currentColor (keep color) — no post-draw picker.
+        hand.push(drawn)
+        const color = isWildRank(drawn.rank) ? state.currentColor : undefined
+        playCardFromHand(state, drawn.id, color)
+      }
+      else {
+        hand.push(drawn)
+        state.currentPlayerIndex = nextPlayerIndex(state, 1)
+      }
+
+      return result()
+    }
+
+    playCardFromHand(state, action.cardId, action.chosenColor)
+    return result()
   }
 
   return {
@@ -194,4 +418,19 @@ export function createUnoGame(options: UnoGameOptions): GameEngine<UnoGameState,
     applyAction,
     isTerminal,
   }
+}
+
+export function createUnoGame(options: UnoGameOptions): GameEngine<UnoGameState, UnoAction> {
+  validatePlayerCount(options.playerCount)
+  const random = createSeededRandom(options.seed ?? Date.now())
+  return createGame(dealInitialState(options.playerCount, random), random)
+}
+
+export function createUnoGameFromState(
+  input: UnoGameState,
+  options?: { seed?: number },
+): GameEngine<UnoGameState, UnoAction> {
+  validatePlayerCount(input.playerCount)
+  const random = createSeededRandom(options?.seed ?? 1)
+  return createGame(input, random)
 }
