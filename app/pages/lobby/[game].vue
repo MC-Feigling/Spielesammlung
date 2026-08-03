@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { GAMES, isGameId } from '~/constants/games'
 import { isRacingRosterValid } from '~/features/games/racing/lobby'
+import { isUnoRosterValid } from '~/features/games/uno/lobby'
 import type { GameId } from '~/types/game'
 import type { SessionPlayerInput } from '~/stores/session'
 
@@ -18,6 +19,9 @@ const canStart = computed(() => {
   if (routeGame === 'racing') {
     return isRacingRosterValid(session.players)
   }
+  if (routeGame === 'uno') {
+    return isUnoRosterValid(session.players)
+  }
   return true
 })
 
@@ -25,6 +29,9 @@ const lobbyHint = computed(() => {
   if (canStart.value) return 'Die Runde kann starten!'
   if (routeGame === 'racing' && session.canBegin && !isRacingRosterValid(session.players)) {
     return 'Maximal 2 Menschen und 2 KI.'
+  }
+  if (routeGame === 'uno' && session.canBegin && !isUnoRosterValid(session.players)) {
+    return 'Genau 1 Mensch und 1–3 KI.'
   }
   return 'Mindestens zwei besetzte Plätze auswählen.'
 })

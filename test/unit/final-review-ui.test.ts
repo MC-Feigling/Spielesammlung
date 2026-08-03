@@ -95,6 +95,7 @@ describe('final review UI fixes', () => {
     const playPage = readSource('app/pages/play/[game].vue')
     const unoBoard = readSource('app/features/games/uno/UnoBoard.vue')
     const games = readSource('app/constants/games.ts')
+    const lobbyPage = readSource('app/pages/lobby/[game].vue')
 
     expect(games).toContain("id: 'uno'")
     expect(games).toContain("value === 'uno'")
@@ -102,5 +103,6 @@ describe('final review UI fixes', () => {
     expect(playPage).toContain("routeGame === 'uno'")
     expect(playPage).toContain('@complete="completeGame"')
     expect(unoBoard).toContain('complete')
+    expect(lobbyPage).toContain('isUnoRosterValid')
   })
 })

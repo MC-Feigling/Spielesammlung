@@ -12,7 +12,7 @@ Kinderfreundliches UNO lokal im Browser: Spieler legt passende Karten, AI-Gegner
 
 | Topic | Choice |
 |-------|--------|
-| Spieler | Lobby 2–4 Sitze; typisch 1× `human` + 1–3× `ai` (wie bestehende Spiele, kein Racing-Cap) |
+| Spieler | Lobby 2–4 Sitze; **genau 1× `human` + 1–3× `ai`** (`isUnoRosterValid`) — kein Multi-Human |
 | Regel-Set | **Vereinfachtes Klassik-UNO** (siehe Rules) — eine Regelmenge, keine Altersvarianten |
 | UNO rufen | **Auto** bei 1 Karte (kein Strafzug für vergessenes Rufen) |
 | +4 Challenge | **Nein** |
@@ -171,9 +171,9 @@ chooseUnoAction(state, actions, options?: { difficulty?: AiDifficulty; random?: 
 
 ### Lobby
 
-- Keine Extra-Gates (anders als Racing)
+- Gate: `isUnoRosterValid` — genau 1 Human, 1–3 AI
+- Hinweis: „Genau 1 Mensch und 1–3 KI.“
 - `minPlayers: 2`, `maxPlayers: 4`
-- Singleplayer = 1 Human + AI-Sitze füllen
 
 ## Out of scope (v1)
 
