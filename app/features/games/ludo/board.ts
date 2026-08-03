@@ -8,7 +8,7 @@ export const LUDO_HOME_START_PROGRESS = LUDO_RING_SIZE
 export const LUDO_HOME_END_PROGRESS = LUDO_HOME_START_PROGRESS + LUDO_HOME_LENGTH - 1
 
 export const LUDO_START_INDEXES = [0, 10, 20, 30] as const
-export const LUDO_PLAYER_COLORS = ['red', 'blue', 'green', 'yellow'] as const
+export const LUDO_PLAYER_COLORS = ['red', 'yellow', 'blue', 'green'] as const
 
 export type LudoPlayerColor = (typeof LUDO_PLAYER_COLORS)[number]
 
