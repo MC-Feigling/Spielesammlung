@@ -15,7 +15,8 @@ Kinderfreundliches Spur-Rennen: 2–4 Autos auf einer geteilten Bahn, max. 2 Men
 | Stil | Spur-Rennen (3 Spuren), Ausweichen |
 | Ziel | Feste Distanz / Ziellinie |
 | Steuerung | Nur Spurwechsel; Tempo automatisch |
-| Treffer | Kurzer Slowdown, Rennen weiter |
+| Treffer | Leichter Dämpfer (70 %, 400 ms), Rennen weiter |
+| Tempo | Linearer Ramp mit eigenem Progress (1,0× → 1,5×) |
 | Spieler | 2–4 Sitze; humans ≤ 2; ais ≤ 2 |
 | Rendering | Vue-DOM + pure TypeScript-Engine |
 | TurnBanner | Nein (alle gleichzeitig) |
@@ -36,7 +37,7 @@ app/features/games/racing/
 ### Track
 
 - `LANE_COUNT = 3` (Lanes `0 | 1 | 2`)
-- `TRACK_LENGTH` feste Distanz für ca. **3 Minuten** Clean-Run (`BASE_SPEED * 180_000`)
+- `TRACK_LENGTH` feste Distanz für ca. **3 Minuten** Clean-Run; berücksichtigt den mittleren Tempo-Multiplikator `MEAN_SPEED_MULT = 1.25` (`BASE_SPEED * TARGET_RACE_MS * MEAN_SPEED_MULT`)
 - Schwierigkeit steigt mit Progress: kürzeres Spawn-Intervall, später bis zu 2 von 3 Spuren blockiert (immer ≥1 Spur frei)
 - Hindernisse spawnen voraus auf einer Spur und bewegen sich relativ zur Scroll-Perspektive
 - Autos haben `progress` (0 → `TRACK_LENGTH`)
@@ -44,14 +45,16 @@ app/features/games/racing/
 
 ### Movement
 
-- Basisgeschwindigkeit konstant (`BASE_SPEED`)
+- Tempo-Ramp pro Auto anhand des eigenen Fortschritts: `speedMult = 1 + 0.5 * (progress / TRACK_LENGTH)` (Start `1.0×`, Ziel `1.5×`)
+- Ohne Treffer: `speed = BASE_SPEED * speedMult`
 - Spurwechsel: ±1 Lane pro Input, Clamp auf `0..2`
 - Humans: Edge-Trigger (Taste neu gedrückt), kein Halten-Spam
 
 ### Collision
 
 - AABB: gleiche Lane + überlappendes Progress-Fenster
-- Treffer → `slowdownUntil = now + SLOWDOWN_MS`; währenddessen `speed = BASE_SPEED * SLOWDOWN_FACTOR`
+- `SLOWDOWN_FACTOR = 0.7`, `SLOWDOWN_MS = 400`
+- Treffer → `slowdownUntil = now + SLOWDOWN_MS`; währenddessen `speed = BASE_SPEED * speedMult * SLOWDOWN_FACTOR`
 - Kein Ausscheiden, kein Zurücksetzen auf der Strecke
 
 ### Win
@@ -128,7 +131,8 @@ AI (`ai.ts`): bei Hindernis auf gleicher Spur voraus → freie Nachbarspur wähl
 Vitest in `test/unit/racing-engine.test.ts` (+ optional `racing-ai`, lobby-limits):
 
 - Spurwechsel Clamp 0–2
-- Kollision setzt Slowdown
+- Kollision setzt leichten Slowdown (70 % für 400 ms)
+- Tempo steigt mit eigenem Progress von 1,0× auf 1,5×
 - Ziel → Winner-Seat
 - Lobby-Regel: >2 humans / >2 AIs ungültig
 - AI weicht Hindernis auf gleicher Spur aus

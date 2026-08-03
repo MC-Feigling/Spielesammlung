@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   BASE_SPEED,
   LANE_COUNT,
+  MEAN_SPEED_MULT,
+  SLOWDOWN_FACTOR,
+  SLOWDOWN_MS,
   SPAWN_INTERVAL_END_MS,
   SPAWN_INTERVAL_START_MS,
+  SPEED_RAMP,
   TARGET_RACE_MS,
   TRACK_LENGTH,
   createRacingGame,
@@ -11,13 +15,22 @@ import {
   pickSpawnLanes,
   spawnCountForDifficulty,
   spawnIntervalMs,
+  speedMultForProgress,
 } from '../../app/features/games/racing/engine'
 
 describe('racing engine', () => {
   it('targets about three minutes at base speed', () => {
-    expect(TRACK_LENGTH).toBe(BASE_SPEED * TARGET_RACE_MS)
-    expect(TRACK_LENGTH / BASE_SPEED).toBe(TARGET_RACE_MS)
+    expect(TRACK_LENGTH).toBe(BASE_SPEED * TARGET_RACE_MS * MEAN_SPEED_MULT)
+    expect(TRACK_LENGTH / (BASE_SPEED * MEAN_SPEED_MULT)).toBe(TARGET_RACE_MS)
     expect(TARGET_RACE_MS).toBe(180_000)
+  })
+
+  it('uses the exact configured speed ramp and slowdown values', () => {
+    expect(SPEED_RAMP).toBe(0.5)
+    expect(SLOWDOWN_FACTOR).toBe(0.7)
+    expect(SLOWDOWN_MS).toBe(400)
+    expect(speedMultForProgress(0)).toBe(1)
+    expect(speedMultForProgress(TRACK_LENGTH)).toBe(1 + SPEED_RAMP)
   })
 
   it('clamps lane changes to 0..LANE_COUNT-1', () => {
@@ -47,7 +60,30 @@ describe('racing engine', () => {
     game.state.obstacles = [{ id: 1, lane: 1, progress: 10 }]
     game.tick(16)
     expect(car.slowdownUntil).toBeGreaterThan(0)
-    expect(car.speed).toBeLessThan(BASE_SPEED)
+    expect(car.speed).toBeCloseTo(
+      BASE_SPEED * speedMultForProgress(car.progress) * SLOWDOWN_FACTOR,
+    )
+
+    game.state.obstacles = []
+    game.tick(SLOWDOWN_MS + 1)
+
+    expect(car.speed).toBeCloseTo(BASE_SPEED * speedMultForProgress(car.progress))
+  })
+
+  it('increases car speed with own progress', () => {
+    const game = createRacingGame({
+      players: [{ seatIndex: 0, type: 'human' }],
+    })
+    game.state.phase = 'racing'
+    const car = game.state.cars[0]!
+
+    car.progress = TRACK_LENGTH / 2
+    game.tick(16)
+    expect(car.speed).toBeGreaterThan(BASE_SPEED)
+
+    car.progress = TRACK_LENGTH * 0.9
+    game.tick(16)
+    expect(car.speed).toBeGreaterThan(BASE_SPEED)
   })
 
   it('declares winner when progress reaches TRACK_LENGTH', () => {

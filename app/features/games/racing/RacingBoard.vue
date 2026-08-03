@@ -7,6 +7,7 @@ import {
   VIEW_AHEAD,
   VIEW_BEHIND,
   createRacingGame,
+  speedMultForProgress,
   type RacingState,
 } from './engine'
 import { chooseRacingLaneDelta } from './ai'
@@ -105,8 +106,8 @@ function getCarColor(seatIndex: number): string {
   return CAR_COLORS[seatIndex % CAR_COLORS.length]!
 }
 
-function isSlowed(speed: number): boolean {
-  return speed < BASE_SPEED * 0.95
+function isSlowed(speed: number, progress: number): boolean {
+  return speed < BASE_SPEED * speedMultForProgress(progress) * 0.95
 }
 
 function tickLoop(timestamp: number): void {
@@ -217,7 +218,7 @@ onBeforeUnmount(() => {
           v-for="car in state.cars"
           :key="`car-${car.seatIndex}`"
           class="absolute z-20 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-100 ease-out"
-          :class="isSlowed(car.speed) ? 'opacity-70' : 'opacity-100'"
+          :class="isSlowed(car.speed, car.progress) ? 'opacity-70' : 'opacity-100'"
           :style="{
             left: `${laneLeftPercent(car.lane)}%`,
             top: `${progressToTopPercent(car.progress)}%`,

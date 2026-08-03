@@ -2,9 +2,11 @@ export const LANE_COUNT = 3
 /** Clean-run target ≈ 3 minutes at BASE_SPEED. */
 export const TARGET_RACE_MS = 180_000
 export const BASE_SPEED = 0.015 // progress units per ms → 15/s
-export const TRACK_LENGTH = BASE_SPEED * TARGET_RACE_MS // 2700
-export const SLOWDOWN_MS = 500
-export const SLOWDOWN_FACTOR = 0.4
+export const SLOWDOWN_MS = 400
+export const SLOWDOWN_FACTOR = 0.7
+export const SPEED_RAMP = 0.5 // +50% at finish → mult 1.0..1.5
+export const MEAN_SPEED_MULT = 1 + SPEED_RAMP / 2 // 1.25
+export const TRACK_LENGTH = BASE_SPEED * TARGET_RACE_MS * MEAN_SPEED_MULT
 export const COUNTDOWN_MS = 3000
 export const CAR_HITBOX = 1.8
 export const OBSTACLE_HITBOX = 1.4
@@ -57,6 +59,10 @@ const ALL_LANES = [0, 1, 2] as const
 export function difficultyFromProgress(progress: number): number {
   if (TRACK_LENGTH <= 0) return 0
   return Math.min(1, Math.max(0, progress / TRACK_LENGTH))
+}
+
+export function speedMultForProgress(progress: number): number {
+  return 1 + SPEED_RAMP * difficultyFromProgress(progress)
 }
 
 export function spawnIntervalMs(difficulty: number): number {
@@ -117,16 +123,12 @@ export function createRacingGame(config: {
 
   function applySlowdown(car: RacingCar): void {
     car.slowdownUntil = nowMs + SLOWDOWN_MS
-    car.speed = BASE_SPEED * SLOWDOWN_FACTOR
+    car.speed = BASE_SPEED * speedMultForProgress(car.progress) * SLOWDOWN_FACTOR
   }
 
   function refreshCarSpeed(car: RacingCar): void {
-    if (car.slowdownUntil > nowMs) {
-      car.speed = BASE_SPEED * SLOWDOWN_FACTOR
-      return
-    }
-
-    car.speed = BASE_SPEED
+    const slowdownMultiplier = car.slowdownUntil > nowMs ? SLOWDOWN_FACTOR : 1
+    car.speed = BASE_SPEED * speedMultForProgress(car.progress) * slowdownMultiplier
   }
 
   function spawnObstacles(): void {

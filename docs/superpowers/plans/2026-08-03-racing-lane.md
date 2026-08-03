@@ -83,10 +83,13 @@
 
 ```ts
 export const LANE_COUNT = 3
-export const TRACK_LENGTH = 120
 export const BASE_SPEED = 0.02 // progress units per ms
-export const SLOWDOWN_MS = 700
-export const SLOWDOWN_FACTOR = 0.35
+export const TARGET_RACE_MS = 180_000
+export const MEAN_SPEED_MULT = 1.25
+export const TRACK_LENGTH = BASE_SPEED * TARGET_RACE_MS * MEAN_SPEED_MULT
+export const SPEED_RAMP = 0.5
+export const SLOWDOWN_MS = 400
+export const SLOWDOWN_FACTOR = 0.7
 export const COUNTDOWN_MS = 3000
 export const CAR_HITBOX = 2 // progress half-extent
 export const OBSTACLE_HITBOX = 1.5
@@ -94,7 +97,7 @@ export const OBSTACLE_SPAWN_AHEAD = 40
 export const OBSTACLE_SPAWN_INTERVAL_MS = 900
 ```
 
-Tune only if playfeel fails tests stay green.
+`TRACK_LENGTH` accounts for the linear ramp's mean speed multiplier of `1.25`, targeting a ~3-minute clean run. Tune only if playfeel fails tests stay green.
 
 ---
 
@@ -186,14 +189,20 @@ bun run test test/unit/racing-engine.test.ts
 
 Expected: FAIL (module missing)
 
+- [ ] **Test expectations**
+
+- Speed ramp uses each car's own `progress`: `speedMult = 1 + SPEED_RAMP * (progress / TRACK_LENGTH)`.
+- A clean car starts at `BASE_SPEED` and reaches `BASE_SPEED * 1.5` at `TRACK_LENGTH`.
+- A colliding car receives the mild slowdown for `SLOWDOWN_MS` (`400`) and moves at `BASE_SPEED * speedMult * SLOWDOWN_FACTOR` (`0.7`) until expiry.
+
 - [ ] **Step 3: Implement `engine.ts`**
 
 Implement per spec:
 
 - `createRacingGame({ players })` initializes cars (spread starting lanes), empty obstacles, `phase: 'countdown'`, `countdownMs: COUNTDOWN_MS`, `trackLength: TRACK_LENGTH`
-- `tick(dtMs)`: countdown → racing; while racing move cars by `speed * dt`, spawn obstacles ahead of camera (`max progress`), resolve collisions, check finish
+- `tick(dtMs)`: countdown → racing; while racing derive each car's `speedMult = 1 + SPEED_RAMP * (progress / TRACK_LENGTH)`, move by `speed * dt`, spawn obstacles ahead of camera (`max progress`), resolve collisions, check finish
 - `setLaneIntent(seatIndex, -1|1)`: only in `racing`; clamp lane
-- Collision: same lane + `|car.progress - obstacle.progress| < CAR_HITBOX + OBSTACLE_HITBOX` → set `slowdownUntil`, reduce speed until expired
+- Collision: same lane + `|car.progress - obstacle.progress| < CAR_HITBOX + OBSTACLE_HITBOX` → set `slowdownUntil = now + 400`; while active apply the mild `0.7` factor to the ramped speed
 - First car with `progress >= TRACK_LENGTH` → `phase: 'finished'`, store winner seat
 - Do **not** implement `GameEngine` interface
 
@@ -542,7 +551,8 @@ Expected: success
 | Spec requirement | Task |
 |------------------|------|
 | 3 lanes, auto speed, finish line | Task 1 |
-| Collision → short slowdown | Task 1 |
+| Collision → mild slowdown (70 %, 400 ms) | Task 1 |
+| Per-car speed ramp (1,0× → 1,5×) | Task 1 |
 | Countdown; no input before racing | Task 1 + 5 |
 | `createRacingGame` contract | Task 1 |
 | AI dodge same-lane obstacle | Task 2 |
