@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { GAMES, isGameId } from '~/constants/games'
+import { isRacingRosterValid } from '~/features/games/racing/lobby'
 import type { GameId } from '~/types/game'
 import type { SessionPlayerInput } from '~/stores/session'
 
@@ -11,6 +12,22 @@ const profilesStore = useProfilesStore()
 const routeGame = Array.isArray(route.params.game) ? route.params.game[0] : route.params.game
 const gameId = computed<GameId | null>(() => (typeof routeGame === 'string' && isGameId(routeGame) ? routeGame : null))
 const game = computed(() => GAMES.find((item) => item.id === gameId.value))
+
+const canStart = computed(() => {
+  if (!session.canBegin) return false
+  if (routeGame === 'racing') {
+    return isRacingRosterValid(session.players)
+  }
+  return true
+})
+
+const lobbyHint = computed(() => {
+  if (canStart.value) return 'Die Runde kann starten!'
+  if (routeGame === 'racing' && session.canBegin && !isRacingRosterValid(session.players)) {
+    return 'Maximal 2 Menschen und 2 KI.'
+  }
+  return 'Mindestens zwei besetzte Plätze auswählen.'
+})
 
 if (!gameId.value) {
   void navigateTo('/')
@@ -113,9 +130,9 @@ function leaveLobby() {
 
     <div class="mt-7 rounded-3xl bg-[#dceddc] p-5 text-[#27462f]">
       <p class="font-bold">
-        {{ session.canBegin ? 'Die Runde kann starten!' : 'Mindestens zwei besetzte Plätze auswählen.' }}
+        {{ lobbyHint }}
       </p>
-      <AppButton class="mt-4" block :disabled="!session.canBegin" @click="startGame">
+      <AppButton class="mt-4" block :disabled="!canStart" @click="startGame">
         Spiel starten
         <span aria-hidden="true">→</span>
       </AppButton>
