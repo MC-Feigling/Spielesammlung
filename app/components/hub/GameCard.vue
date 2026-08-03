@@ -22,6 +22,7 @@ const GAME_ICONS: Record<GameId, string> = {
   kniffel: '🎲',
   ludo: '🏁',
   racing: '🏎️',
+  uno: '🃏',
 }
 </script>
 

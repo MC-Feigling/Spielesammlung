@@ -28,7 +28,7 @@ Siehe `docs/superpowers/plans/2026-08-03-kinder-spielesammlung.md`
 
 ## MVP-Spiele
 
-Memory, Kniffel (Custom-Score), Mensch ärgere dich nicht, Spurrennen
+Memory, Kniffel (Custom-Score), Mensch ärgere dich nicht, Spurrennen, UNO
 
 ## Branch
 

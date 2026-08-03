@@ -90,4 +90,17 @@ describe('final review UI fixes', () => {
       || (racingBoard.includes('A') && racingBoard.includes('D')),
     ).toBe(true)
   })
+
+  it('wires UnoBoard on the play page and emits complete', () => {
+    const playPage = readSource('app/pages/play/[game].vue')
+    const unoBoard = readSource('app/features/games/uno/UnoBoard.vue')
+    const games = readSource('app/constants/games.ts')
+
+    expect(games).toContain("id: 'uno'")
+    expect(games).toContain("value === 'uno'")
+    expect(playPage).toContain('UnoBoard')
+    expect(playPage).toContain("routeGame === 'uno'")
+    expect(playPage).toContain('@complete="completeGame"')
+    expect(unoBoard).toContain('complete')
+  })
 })
