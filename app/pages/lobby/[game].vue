@@ -40,8 +40,16 @@ function setSeatCount(event: Event) {
   session.setSeatCount(Number((event.target as HTMLSelectElement).value))
 }
 
+function setMemoryGridSize(event: Event) {
+  session.setMemoryGridSize((event.target as HTMLSelectElement).value as '4x3' | '4x4')
+}
+
 function startGame() {
   session.beginPlay()
+}
+
+function leaveLobby() {
+  session.endSession()
 }
 </script>
 
@@ -50,6 +58,7 @@ function startGame() {
     <NuxtLink
       to="/"
       class="inline-flex min-h-[var(--hit-min)] items-center font-bold text-[var(--color-felt)] underline decoration-2 underline-offset-4 focus-visible:outline-4 focus-visible:outline-[var(--color-accent)]"
+      @click="leaveLobby"
     >
       ← Zurück zur Spielauswahl
     </NuxtLink>
@@ -74,6 +83,21 @@ function startGame() {
         <option :value="3">3 Plätze</option>
         <option :value="4">4 Plätze</option>
       </select>
+
+      <template v-if="gameId === 'memory'">
+        <label class="mt-6 block max-w-xs text-sm font-bold" for="memory-grid-size">
+          Wie groß soll das Memory sein?
+        </label>
+        <select
+          id="memory-grid-size"
+          class="mt-1 min-h-[var(--hit-min)] w-full max-w-xs rounded-2xl border-2 border-[#c48a4a] bg-white px-4 font-bold focus:outline-4 focus:outline-offset-2 focus:outline-[var(--color-accent)]"
+          :value="session.memoryGridSize"
+          @change="setMemoryGridSize"
+        >
+          <option value="4x3">Klein – 12 Karten</option>
+          <option value="4x4">Groß – 16 Karten</option>
+        </select>
+      </template>
     </div>
 
     <div class="mt-7 grid gap-5 sm:grid-cols-2">

@@ -4,9 +4,11 @@ import type { GameId, SessionPlayer } from '~/types/game'
 
 export type SessionSeat = SessionPlayer | null
 export type SessionPlayerInput = Omit<SessionPlayer, 'seatIndex'>
+export type MemoryGridSize = '4x3' | '4x4'
 
 export const MIN_SEAT_COUNT = 2
 export const MAX_SEAT_COUNT = 4
+export const DEFAULT_MEMORY_GRID_SIZE: MemoryGridSize = '4x3'
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
@@ -35,6 +37,7 @@ function createSeats(count: number): SessionSeat[] {
 export const useSessionStore = defineStore('session', () => {
   const gameId = ref<GameId | null>(null)
   const seats = ref<SessionSeat[]>(createSeats(MIN_SEAT_COUNT))
+  const memoryGridSize = ref<MemoryGridSize>(DEFAULT_MEMORY_GRID_SIZE)
 
   const players = computed(() => seats.value.filter(isValidSessionPlayer))
   const seatCount = computed(() => seats.value.length)
@@ -43,6 +46,7 @@ export const useSessionStore = defineStore('session', () => {
   function startLobby(nextGameId: GameId) {
     gameId.value = nextGameId
     seats.value = createSeats(MIN_SEAT_COUNT)
+    memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
   }
 
   function setSeatCount(nextSeatCount: number) {
@@ -71,6 +75,14 @@ export const useSessionStore = defineStore('session', () => {
     seats.value = seats.value.map((seat, index) => (index === seatIndex ? nextPlayer : seat))
   }
 
+  function setMemoryGridSize(nextGridSize: MemoryGridSize) {
+    if (nextGridSize !== '4x3' && nextGridSize !== '4x4') {
+      throw new Error('Ungültige Memory-Rastergröße')
+    }
+
+    memoryGridSize.value = nextGridSize
+  }
+
   function beginPlay(): boolean {
     if (!gameId.value || !canBegin.value) return false
 
@@ -81,17 +93,20 @@ export const useSessionStore = defineStore('session', () => {
   function endSession() {
     gameId.value = null
     seats.value = createSeats(MIN_SEAT_COUNT)
+    memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
   }
 
   return {
     gameId,
     seats,
+    memoryGridSize,
     players,
     seatCount,
     canBegin,
     startLobby,
     setSeatCount,
     setSeat,
+    setMemoryGridSize,
     beginPlay,
     endSession,
   }
