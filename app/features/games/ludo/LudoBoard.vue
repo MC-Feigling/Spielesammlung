@@ -1,7 +1,25 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
-import { getRingIndex, isFullyHome, isInHome, isInYard, LUDO_PLAYER_COLORS, type LudoPlayerColor } from './board'
+import {
+  getRingIndex,
+  isInHome,
+  isInYard,
+  LUDO_HOME_LENGTH,
+  LUDO_PLAYER_COLORS,
+  LUDO_RING_SIZE,
+  LUDO_START_INDEXES,
+  type LudoPlayerColor,
+} from './board'
+import {
+  BOARD_GRID_SIZE,
+  getCenterCell,
+  getHomeCell,
+  getRingCell,
+  getRingEdges,
+  getYardCell,
+  type BoardCell,
+} from './boardLayout'
 import { chooseLudoAction } from './ai'
 import { canControlPiece, createLudoGame, type LudoAction, type LudoGameState, type LudoMoveFrom } from './engine'
 
@@ -14,12 +32,39 @@ const emit = defineEmits<{
 }>()
 
 const AI_ACTION_DELAY_MS = 700
+const PATH_STROKE = '#2b2118'
+const BOARD_FACE = '#fffaf0'
+const SEAT_COUNT = 4
+const YARD_SLOT_COUNT = 4
+const CIRCLE_RADIUS = 0.36
+const HUB_RADIUS = 0.42
+
 const COLOR_CLASSES: Record<LudoPlayerColor, string> = {
   red: 'border-[#9e3b24] bg-[#e7674c] text-white',
+  yellow: 'border-[#a56e16] bg-[#f2bf4f] text-[#4c3424]',
   blue: 'border-[#26628e] bg-[#5ca4d6] text-white',
   green: 'border-[#2f7044] bg-[#66b57a] text-white',
-  yellow: 'border-[#a56e16] bg-[#f2bf4f] text-[#4c3424]',
 }
+
+const COLOR_HEX: Record<LudoPlayerColor, string> = {
+  red: '#e7674c',
+  yellow: '#f2bf4f',
+  blue: '#5ca4d6',
+  green: '#66b57a',
+}
+
+const CORNER_WASHES: ReadonlyArray<{
+  color: LudoPlayerColor
+  x: number
+  y: number
+  width: number
+  height: number
+}> = [
+  { color: 'green', x: 0, y: 0, width: 4, height: 4 },
+  { color: 'red', x: 7, y: 0, width: 4, height: 4 },
+  { color: 'yellow', x: 7, y: 7, width: 4, height: 4 },
+  { color: 'blue', x: 0, y: 7, width: 4, height: 4 },
+]
 
 const game = createLudoGame({ playerCount: props.players.length })
 const { play } = useSound()
@@ -31,21 +76,53 @@ const isAiTurn = computed(() => currentPlayer.value?.type === 'ai')
 const validActions = computed(() => game.getValidActions())
 const canRoll = computed(() => validActions.value.some((action) => action.type === 'roll'))
 const moveActions = computed(() => validActions.value.filter((action): action is Extract<LudoAction, { type: 'move' }> => action.type === 'move'))
+
+const ringCells = Array.from({ length: LUDO_RING_SIZE }, (_, index) => getRingCell(index))
+const ringEdges = getRingEdges()
+const centerCell = getCenterCell()
+
+const startCells = LUDO_START_INDEXES.map((ringIndex, playerIndex) => ({
+  cell: getRingCell(ringIndex),
+  color: LUDO_PLAYER_COLORS[playerIndex],
+}))
+
+const homeCells = Array.from({ length: SEAT_COUNT }, (_, playerIndex) =>
+  Array.from({ length: LUDO_HOME_LENGTH }, (_, homeStep) => ({
+    cell: getHomeCell(playerIndex, homeStep),
+    color: LUDO_PLAYER_COLORS[playerIndex],
+  })),
+).flat()
+
+const yardCells = Array.from({ length: SEAT_COUNT }, (_, playerIndex) =>
+  Array.from({ length: YARD_SLOT_COUNT }, (_, slotIndex) => ({
+    cell: getYardCell(playerIndex, slotIndex),
+    color: LUDO_PLAYER_COLORS[playerIndex],
+  })),
+).flat()
+
 const ringPieces = computed(() => state.value.pieces.flatMap((pieces, playerIndex) => (
   pieces.flatMap((piece, pieceIndex) => {
     const ringIndex = getRingIndex(playerIndex, piece.progress)
-    return ringIndex === null ? [] : [{ playerIndex, pieceIndex, ringIndex, color: LUDO_PLAYER_COLORS[playerIndex] }]
+    if (ringIndex === null) return []
+    return [{
+      playerIndex,
+      pieceIndex,
+      ringIndex,
+      color: LUDO_PLAYER_COLORS[playerIndex],
+      style: cellStyle(getRingCell(ringIndex)),
+    }]
   })
 )))
 
-function ringPosition(ringIndex: number) {
-  const sideLength = 10
-  const unit = 100 / sideLength
+function cellCenter(cell: BoardCell): { cx: number, cy: number } {
+  return { cx: cell.col + 0.5, cy: cell.row + 0.5 }
+}
 
-  if (ringIndex < sideLength) return { left: `${(ringIndex + 0.5) * unit}%`, top: '5%' }
-  if (ringIndex < sideLength * 2) return { left: '95%', top: `${(ringIndex - sideLength + 0.5) * unit}%` }
-  if (ringIndex < sideLength * 3) return { left: `${(sideLength * 3 - ringIndex - 0.5) * unit}%`, top: '95%' }
-  return { left: '5%', top: `${(sideLength * 4 - ringIndex - 0.5) * unit}%` }
+function cellStyle(cell: BoardCell): { left: string, top: string } {
+  return {
+    left: `${((cell.col + 0.5) / BOARD_GRID_SIZE) * 100}%`,
+    top: `${((cell.row + 0.5) / BOARD_GRID_SIZE) * 100}%`,
+  }
 }
 
 function colorClass(playerIndex: number) {
@@ -110,22 +187,94 @@ onBeforeUnmount(() => {
 
     <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_15rem]">
       <div class="rounded-3xl bg-[var(--color-panel)] p-3 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c] sm:p-5">
-        <div class="relative aspect-square rounded-2xl bg-[#fffaf0]">
-          <div
-            v-for="ringIndex in 40"
-            :key="ringIndex"
-            class="absolute size-[9%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#dfbd8c] bg-white"
-            :class="[ringIndex - 1 === 0 ? 'ring-4 ring-[#e7674c]' : '', ringIndex - 1 === 10 ? 'ring-4 ring-[#5ca4d6]' : '', ringIndex - 1 === 20 ? 'ring-4 ring-[#66b57a]' : '', ringIndex - 1 === 30 ? 'ring-4 ring-[#f2bf4f]' : '']"
-            :style="ringPosition(ringIndex - 1)"
+        <div
+          class="relative aspect-square overflow-hidden rounded-2xl"
+          :style="{ backgroundColor: BOARD_FACE }"
+          role="region"
+          aria-label="Mensch ärgere dich nicht Brett"
+        >
+          <svg
+            class="absolute inset-0 size-full"
+            :viewBox="`0 0 ${BOARD_GRID_SIZE} ${BOARD_GRID_SIZE}`"
             aria-hidden="true"
-          />
+          >
+            <rect
+              v-for="wash in CORNER_WASHES"
+              :key="`wash-${wash.color}`"
+              :x="wash.x"
+              :y="wash.y"
+              :width="wash.width"
+              :height="wash.height"
+              :fill="COLOR_HEX[wash.color]"
+              fill-opacity="0.22"
+              rx="0.35"
+            />
 
-          <div class="absolute inset-[18%] grid grid-cols-2 gap-3 rounded-3xl bg-[#fff3c4] p-4 text-center shadow-inner sm:p-6">
-            <div v-for="(player, playerIndex) in players" :key="player.seatIndex" class="flex flex-col items-center justify-center rounded-2xl bg-white/75 p-2">
-              <span class="text-xs font-bold">{{ player.displayName }}</span>
-              <span class="mt-1 text-xs">{{ state.pieces[playerIndex].filter((piece) => isFullyHome(piece)).length }} im Ziel</span>
-            </div>
-          </div>
+            <line
+              v-for="(edge, edgeIndex) in ringEdges"
+              :key="`edge-${edgeIndex}`"
+              :x1="cellCenter(edge[0]).cx"
+              :y1="cellCenter(edge[0]).cy"
+              :x2="cellCenter(edge[1]).cx"
+              :y2="cellCenter(edge[1]).cy"
+              :stroke="PATH_STROKE"
+              stroke-width="0.08"
+              stroke-linecap="round"
+            />
+
+            <circle
+              v-for="(cell, ringIndex) in ringCells"
+              :key="`ring-${ringIndex}`"
+              :cx="cellCenter(cell).cx"
+              :cy="cellCenter(cell).cy"
+              :r="CIRCLE_RADIUS"
+              fill="#ffffff"
+              :stroke="PATH_STROKE"
+              stroke-width="0.07"
+            />
+
+            <circle
+              v-for="start in startCells"
+              :key="`start-${start.color}`"
+              :cx="cellCenter(start.cell).cx"
+              :cy="cellCenter(start.cell).cy"
+              :r="CIRCLE_RADIUS"
+              :fill="COLOR_HEX[start.color]"
+              :stroke="PATH_STROKE"
+              stroke-width="0.07"
+            />
+
+            <circle
+              v-for="(home, homeIndex) in homeCells"
+              :key="`home-${homeIndex}`"
+              :cx="cellCenter(home.cell).cx"
+              :cy="cellCenter(home.cell).cy"
+              :r="CIRCLE_RADIUS"
+              :fill="COLOR_HEX[home.color]"
+              :stroke="PATH_STROKE"
+              stroke-width="0.07"
+            />
+
+            <circle
+              v-for="(yard, yardIndex) in yardCells"
+              :key="`yard-${yardIndex}`"
+              :cx="cellCenter(yard.cell).cx"
+              :cy="cellCenter(yard.cell).cy"
+              :r="CIRCLE_RADIUS"
+              :fill="COLOR_HEX[yard.color]"
+              :stroke="PATH_STROKE"
+              stroke-width="0.07"
+            />
+
+            <circle
+              :cx="cellCenter(centerCell).cx"
+              :cy="cellCenter(centerCell).cy"
+              :r="HUB_RADIUS"
+              :fill="BOARD_FACE"
+              :stroke="PATH_STROKE"
+              stroke-width="0.07"
+            />
+          </svg>
 
           <button
             v-for="piece in ringPieces"
@@ -133,7 +282,7 @@ onBeforeUnmount(() => {
             type="button"
             class="absolute z-10 flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition-[left,top,transform] duration-300 ease-out hover:scale-110 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] motion-reduce:transition-none sm:size-11"
             :class="colorClass(piece.playerIndex)"
-            :style="ringPosition(piece.ringIndex)"
+            :style="piece.style"
             :disabled="isAiTurn || !canControlPiece(state, piece.playerIndex) || !isValidMove(piece.pieceIndex, 'ring')"
             :aria-label="`${players[piece.playerIndex].displayName}, Figur ${piece.pieceIndex + 1}${canControlPiece(state, piece.playerIndex) && isValidMove(piece.pieceIndex, 'ring') ? ' ziehen' : ''}`"
             @click="movePiece(piece.playerIndex, piece.pieceIndex, 'ring')"
