@@ -6,8 +6,9 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
   { id: 'ludo', title: 'Mensch ärgere dich nicht', blurb: 'Rauswerfen und ins Ziel!', minPlayers: 2, maxPlayers: 4 },
   { id: 'racing', title: 'Spurrennen', blurb: 'Ausweichen und zuerst ins Ziel!', minPlayers: 2, maxPlayers: 4 },
   { id: 'uno', title: 'UNO', blurb: 'Allein gegen bis zu 3 Roboter!', minPlayers: 2, maxPlayers: 4 },
+  { id: 'connectFour', title: 'Vier gewinnt', blurb: '4 in einer Reihe!', minPlayers: 2, maxPlayers: 2 },
 ]
 
 export function isGameId(value: string): value is GameId {
-  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno'
+  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour'
 }

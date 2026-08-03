@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { GAMES, isGameId } from '~/constants/games'
+import { isConnectFourRosterValid } from '~/features/games/connectFour/lobby'
 import { isRacingRosterValid } from '~/features/games/racing/lobby'
 import { isUnoRosterValid } from '~/features/games/uno/lobby'
 import type { GameId } from '~/types/game'
@@ -22,6 +23,9 @@ const canStart = computed(() => {
   if (routeGame === 'uno') {
     return isUnoRosterValid(session.players)
   }
+  if (routeGame === 'connectFour') {
+    return isConnectFourRosterValid(session.players)
+  }
   return true
 })
 
@@ -32,6 +36,9 @@ const lobbyHint = computed(() => {
   }
   if (routeGame === 'uno' && session.canBegin && !isUnoRosterValid(session.players)) {
     return 'Genau 1 Mensch und 1–3 KI.'
+  }
+  if (routeGame === 'connectFour' && session.canBegin && !isConnectFourRosterValid(session.players)) {
+    return 'Genau 2 Plätze besetzen.'
   }
   return 'Mindestens zwei besetzte Plätze auswählen.'
 })

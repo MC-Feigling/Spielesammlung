@@ -20,6 +20,7 @@ const gameTitle = computed(() => {
   if (routeGame === 'kniffel') return 'Kniffel'
   if (routeGame === 'racing') return 'Spurrennen'
   if (routeGame === 'uno') return 'UNO'
+  if (routeGame === 'connectFour') return 'Vier gewinnt'
   return 'Mensch ärgere dich nicht'
 })
 const winners = computed(() => winnerSeatIndexes.value
@@ -81,6 +82,11 @@ function completeGame(nextWinnerSeatIndexes: number[]) {
     />
     <UnoBoard
       v-else-if="routeGame === 'uno'"
+      :players="players"
+      @complete="completeGame"
+    />
+    <ConnectFourBoard
+      v-else-if="routeGame === 'connectFour'"
       :players="players"
       @complete="completeGame"
     />

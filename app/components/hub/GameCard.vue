@@ -23,6 +23,7 @@ const GAME_ICONS: Record<GameId, string> = {
   ludo: '🏁',
   racing: '🏎️',
   uno: '🃏',
+  connectFour: '🔴',
 }
 </script>
 
