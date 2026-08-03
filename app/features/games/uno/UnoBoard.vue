@@ -10,6 +10,8 @@ import {
   type UnoGameState,
   type UnoRank,
 } from './engine'
+import UnoCardBack from './UnoCardBack.vue'
+import UnoCardFace from './UnoCardFace.vue'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -22,10 +24,10 @@ const emit = defineEmits<{
 const AI_ACTION_DELAY_MS = 700
 
 const COLOR_HEX: Record<UnoColor, string> = {
-  red: '#e7674c',
-  yellow: '#f2bf4f',
-  green: '#66b57a',
-  blue: '#5ca4d6',
+  red: '#d7263d',
+  yellow: '#f5c518',
+  green: '#2a9d4a',
+  blue: '#1f6feb',
 }
 
 const COLOR_LABELS: Record<UnoColor, string> = {
@@ -36,10 +38,10 @@ const COLOR_LABELS: Record<UnoColor, string> = {
 }
 
 const COLOR_BUTTON_CLASSES: Record<UnoColor, string> = {
-  red: 'border-[#9e3b24] bg-[#e7674c] text-white',
-  yellow: 'border-[#a56e16] bg-[#f2bf4f] text-[#4c3424]',
-  green: 'border-[#2f7044] bg-[#66b57a] text-white',
-  blue: 'border-[#26628e] bg-[#5ca4d6] text-white',
+  red: 'border-[#8b1a28] bg-[#d7263d] text-white',
+  yellow: 'border-[#a56e16] bg-[#f5c518] text-[#1a1a1a]',
+  green: 'border-[#1f6b34] bg-[#2a9d4a] text-white',
+  blue: 'border-[#154a9e] bg-[#1f6feb] text-white',
 }
 
 const RANK_LABELS: Record<UnoRank, string> = {
@@ -116,15 +118,6 @@ const showWildPicker = computed(() => pendingWildCardId.value !== null && !isAiT
 
 function isWildCard(card: UnoCard): boolean {
   return card.rank === 'wild' || card.rank === 'wildDrawFour'
-}
-
-function cardFaceColor(card: UnoCard): string {
-  if (isWildCard(card)) return state.value.currentColor
-  return card.color as UnoColor
-}
-
-function cardLabel(card: UnoCard): string {
-  return RANK_LABELS[card.rank]
 }
 
 function cardAriaLabel(card: UnoCard): string {
@@ -239,9 +232,10 @@ onBeforeUnmount(() => {
             <div
               v-for="backIndex in Math.min(state.hands[seatIndex]?.length ?? 0, 5)"
               :key="`back-${seatIndex}-${backIndex}`"
-              class="h-14 w-10 rounded-lg border-2 border-[#9e3b24] bg-[var(--color-accent)] shadow-[0_2px_0_#9e3b24]"
-              :style="{ marginLeft: backIndex === 1 ? '0' : '-1.1rem' }"
-            />
+              :style="{ marginLeft: backIndex === 1 ? '0' : '-1.35rem' }"
+            >
+              <UnoCardBack size="sm" />
+            </div>
           </div>
           <p class="mt-2 text-sm font-bold" :aria-label="`${state.hands[seatIndex]?.length ?? 0} Karten`">
             {{ state.hands[seatIndex]?.length ?? 0 }} Karten
@@ -257,20 +251,14 @@ onBeforeUnmount(() => {
             </p>
             <div
               v-if="discardTop"
-              class="flex h-28 w-20 flex-col items-center justify-center rounded-2xl border-4 text-center shadow-[0_4px_0_#4c3424] sm:h-36 sm:w-24"
-              :style="{
-                backgroundColor: COLOR_HEX[isWildCard(discardTop) ? state.currentColor : cardFaceColor(discardTop)],
-                color: (isWildCard(discardTop) ? state.currentColor : cardFaceColor(discardTop)) === 'yellow'
-                  ? '#4c3424'
-                  : '#ffffff',
-                borderColor: '#4c3424',
-              }"
+              class="flex flex-col items-center gap-2"
               :aria-label="`Oben: ${cardAriaLabel(discardTop)}, Farbe ${COLOR_LABELS[state.currentColor]}`"
             >
-              <span class="font-[var(--font-display)] text-3xl font-black sm:text-4xl">
-                {{ cardLabel(discardTop) }}
-              </span>
-              <span class="mt-1 text-xs font-bold uppercase tracking-wide opacity-90">
+              <UnoCardFace :card="discardTop" size="lg" />
+              <span
+                class="rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-[0_2px_0_#4c3424]"
+                :style="{ backgroundColor: COLOR_HEX[state.currentColor], color: state.currentColor === 'yellow' ? '#1a1a1a' : '#ffffff' }"
+              >
                 {{ COLOR_LABELS[state.currentColor] }}
               </span>
             </div>
@@ -282,16 +270,18 @@ onBeforeUnmount(() => {
             </p>
             <button
               type="button"
-              class="flex h-28 w-20 min-h-12 min-w-12 flex-col items-center justify-center rounded-2xl border-4 border-[#9e3b24] bg-[var(--color-accent)] text-white shadow-[0_4px_0_#9e3b24] transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:h-36 sm:w-24"
+              class="relative min-h-12 min-w-12 transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
               :disabled="!canDraw"
               :aria-label="state.pendingDrawCount > 0
                 ? `${state.pendingDrawCount} Karten ziehen`
                 : 'Eine Karte ziehen'"
               @click="drawCard"
             >
-              <span class="font-[var(--font-display)] text-lg font-bold sm:text-xl">Ziehen</span>
-              <span class="mt-1 text-xs font-semibold opacity-90">
-                {{ state.drawPile.length }}
+              <UnoCardBack size="lg" />
+              <span
+                class="absolute inset-x-1 bottom-2 rounded-md bg-black/55 px-1 py-0.5 text-center text-[0.65rem] font-bold text-white sm:text-xs"
+              >
+                {{ state.drawPile.length }} · Ziehen
               </span>
             </button>
           </div>
@@ -339,30 +329,15 @@ onBeforeUnmount(() => {
             v-for="card in humanHand"
             :key="card.id"
             type="button"
-            class="flex h-24 w-[4.25rem] min-h-12 min-w-12 flex-col items-center justify-center rounded-2xl border-4 text-center shadow-[0_3px_0_#4c3424] transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:h-28 sm:w-20"
+            class="min-h-12 min-w-12 rounded-[0.9rem] transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
             :class="canPlayCard(card.id)
               ? 'z-10 scale-105 ring-4 ring-[var(--color-accent)] ring-offset-2 ring-offset-[#fff6e8] hover:-translate-y-1 motion-safe:animate-pulse'
               : 'opacity-70'"
-            :style="{
-              backgroundColor: isWildCard(card)
-                ? '#2b2118'
-                : COLOR_HEX[card.color as UnoColor],
-              color: isWildCard(card) || card.color === 'yellow' ? (isWildCard(card) ? '#fffaf0' : '#4c3424') : '#ffffff',
-              borderColor: '#4c3424',
-            }"
             :disabled="!canPlayCard(card.id)"
             :aria-label="cardAriaLabel(card)"
             @click="onCardClick(card)"
           >
-            <span class="font-[var(--font-display)] text-2xl font-black sm:text-3xl">
-              {{ cardLabel(card) }}
-            </span>
-            <span
-              v-if="!isWildCard(card)"
-              class="mt-0.5 text-[0.65rem] font-bold uppercase tracking-wide opacity-90"
-            >
-              {{ COLOR_LABELS[card.color as UnoColor] }}
-            </span>
+            <UnoCardFace :card="card" size="sm" />
           </button>
         </div>
         <p
