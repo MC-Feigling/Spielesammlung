@@ -21,6 +21,7 @@ const GAME_ICONS: Record<GameId, string> = {
   memory: '🧠',
   kniffel: '🎲',
   ludo: '🏁',
+  racing: '🏎️',
 }
 </script>
 

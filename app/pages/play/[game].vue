@@ -18,6 +18,7 @@ const memoryGrid = computed(() => session.memoryGridSize === '4x4'
 const gameTitle = computed(() => {
   if (routeGame === 'memory') return 'Memory'
   if (routeGame === 'kniffel') return 'Kniffel'
+  if (routeGame === 'racing') return 'Spurrennen'
   return 'Mensch ärgere dich nicht'
 })
 const winners = computed(() => winnerSeatIndexes.value
@@ -72,6 +73,11 @@ function completeGame(nextWinnerSeatIndexes: number[]) {
     />
     <KniffelBoard v-else-if="routeGame === 'kniffel'" :players="players" @complete="completeGame" />
     <LudoBoard v-else-if="routeGame === 'ludo'" :players="players" @complete="completeGame" />
+    <RacingBoard
+      v-else-if="routeGame === 'racing'"
+      :players="players"
+      @complete="completeGame"
+    />
 
     <AppDialog
       v-model="isQuitDialogOpen"
