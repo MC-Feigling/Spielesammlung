@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { computed, ref } from 'vue'
 import { createKniffelGame } from '../../app/features/games/kniffel/engine'
+import { totalScore } from '../../app/features/games/kniffel/scoring'
 
 describe('kniffel engine', () => {
   it('rolls five dice and preserves held dice', () => {
@@ -69,5 +72,18 @@ describe('kniffel engine', () => {
     state.value = game.applyAction({ type: 'roll' }).state
 
     expect(validActions.value.some((action) => action.type === 'toggleHold')).toBe(true)
+  })
+
+  it('includes upper bonus when comparing player totals', () => {
+    const withBonus = { ones: 5, twos: 10, threes: 15, fours: 16, fives: 15, sixes: 6 }
+    const withoutBonus = { ones: 5, twos: 10, threes: 15, fours: 16, fives: 10, sixes: 6, chance: 35 }
+    expect(totalScore(withBonus)).toBe(102)
+    expect(totalScore(withoutBonus)).toBe(97)
+  })
+
+  it('wires winnerSeatIndexes through totalScore', () => {
+    const source = readFileSync(resolve('app/features/games/kniffel/engine.ts'), 'utf8')
+    expect(source).toMatch(/totalScore\(/)
+    expect(source).not.toMatch(/Object\.values\(scoreSheet\)\.reduce/)
   })
 })

@@ -1,5 +1,5 @@
 import type { EngineResult, GameEngine } from '../shared/engine'
-import { KNIFFEL_CATEGORIES, type KniffelCategory, scoreCategory } from './scoring'
+import { KNIFFEL_CATEGORIES, type KniffelCategory, scoreCategory, totalScore } from './scoring'
 
 export type KniffelAction =
   | { type: 'roll' }
@@ -60,9 +60,7 @@ export function createKniffelGame(options: KniffelGameOptions): GameEngine<Kniff
   function winnerSeatIndexes() {
     if (!isTerminal()) return []
 
-    const totals = state.scoreSheets.map((scoreSheet) => (
-      Object.values(scoreSheet).reduce((total, score) => total + (score ?? 0), 0)
-    ))
+    const totals = state.scoreSheets.map((scoreSheet) => totalScore(scoreSheet))
     const highestTotal = Math.max(...totals)
     return totals.flatMap((total, index) => total === highestTotal ? [index] : [])
   }
