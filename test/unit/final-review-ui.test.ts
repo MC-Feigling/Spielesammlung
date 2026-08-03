@@ -81,4 +81,13 @@ describe('final review UI fixes', () => {
     expect(button).toContain("'danger'")
     expect(button).toMatch(/type ButtonVariant = .*danger/)
   })
+
+  it('wires RacingBoard complete emit and control hints', () => {
+    const racingBoard = readSource('app/features/games/racing/RacingBoard.vue')
+    expect(racingBoard).toContain('complete')
+    expect(
+      racingBoard.includes('Steuerung')
+      || (racingBoard.includes('A') && racingBoard.includes('D')),
+    ).toBe(true)
+  })
 })
