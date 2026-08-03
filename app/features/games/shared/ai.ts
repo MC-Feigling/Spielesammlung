@@ -16,3 +16,6 @@ export const UNO_EASY_BLUNDER_RATE = 0.45
 
 /** Chance that easy Connect Four AI picks a random legal move. */
 export const CONNECT_FOUR_EASY_BLUNDER_RATE = 0.45
+
+/** Chance that easy Shut the Box AI picks a random legal close. */
+export const SHUT_THE_BOX_EASY_BLUNDER_RATE = 0.4
