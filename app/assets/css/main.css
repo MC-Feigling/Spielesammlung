@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+html, body, #__nuxt {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--color-bg);
+  color: var(--color-ink);
+}

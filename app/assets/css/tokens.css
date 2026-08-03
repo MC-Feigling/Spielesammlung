@@ -1,0 +1,21 @@
+:root {
+  --font-display: "Fredoka", "Trebuchet MS", sans-serif;
+  --font-ui: "Nunito", "Trebuchet MS", sans-serif;
+  --color-bg: #f3e7d3;
+  --color-ink: #2b2118;
+  --color-wood: #c48a4a;
+  --color-felt: #3f6b4a;
+  --color-accent: #d45d3a;
+  --color-panel: #fff6e8;
+  --hit-min: 48px;
+}
+
+[data-ui-scale="large"] {
+  --text-base: 1.25rem;
+  --hit-min: 56px;
+}
+
+[data-ui-scale="compact"] {
+  --text-base: 1rem;
+  --hit-min: 48px;
+}
