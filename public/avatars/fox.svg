@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Fuchs">
+  <circle cx="60" cy="60" r="56" fill="#DCECDC"/>
+  <path d="M19 42 28 13l22 20h20l22-20 9 29v34c0 19-18 31-41 31S19 95 19 76Z" fill="#E97832"/>
+  <path d="m28 23 6 19 12-8Zm64 0-6 19-12-8Z" fill="#FFE8D0"/>
+  <path d="M28 75q32 26 64 0L80 96H40Z" fill="#FFF7E8"/>
+  <circle cx="44" cy="60" r="5" fill="#2B2118"/><circle cx="76" cy="60" r="5" fill="#2B2118"/>
+  <path d="M54 72q6-7 12 0-6 6-12 0Z" fill="#2B2118"/>
+</svg>

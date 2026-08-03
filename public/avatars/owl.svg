@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Eule">
+  <circle cx="60" cy="60" r="56" fill="#E9DCFA"/>
+  <path d="m22 43 8-24 18 12h24l18-12 8 24v35c0 19-16 30-38 30S22 97 22 78Z" fill="#7254A5"/>
+  <circle cx="42" cy="61" r="18" fill="#FFF6E8"/><circle cx="78" cy="61" r="18" fill="#FFF6E8"/>
+  <circle cx="44" cy="62" r="7" fill="#2B2118"/><circle cx="76" cy="62" r="7" fill="#2B2118"/>
+  <path d="m60 70 10 12H50Z" fill="#F0AE3B"/>
+  <path d="M41 91q19 9 38 0" fill="none" stroke="#513778" stroke-linecap="round" stroke-width="5"/>
+</svg>

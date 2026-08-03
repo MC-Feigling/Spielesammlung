@@ -1,12 +1,14 @@
-<template>
-  <div>
-    <NuxtRouteAnnouncer />
-    <NuxtWelcome />
-  </div>
-</template>
-
 <script setup lang="ts">
+const settings = useSettingsStore()
+const profiles = useProfilesStore()
+
+onMounted(() => {
+  settings.hydrate()
+  profiles.hydrate()
+})
+
 useHead({
+  title: 'Spielesammlung',
   link: [
     {
       rel: 'stylesheet',
@@ -15,3 +17,10 @@ useHead({
   ],
 })
 </script>
+
+<template>
+  <NuxtRouteAnnouncer />
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+</template>

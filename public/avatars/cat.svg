@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Katze">
+  <circle cx="60" cy="60" r="56" fill="#FDE2D5"/>
+  <path d="M20 44 27 15l22 18h22l22-18 7 29v33c0 20-17 31-38 31S22 97 22 77Z" fill="#E89B53"/>
+  <path d="m28 25 7 17 12-8Zm64 0-7 17-12-8Z" fill="#F9D4A5"/>
+  <ellipse cx="60" cy="78" rx="24" ry="17" fill="#FFF6E8"/>
+  <circle cx="44" cy="61" r="5" fill="#2B2118"/><circle cx="76" cy="61" r="5" fill="#2B2118"/>
+  <path d="M55 72h10l-5 5Z" fill="#C96A6A"/>
+  <path d="M60 77v6m-18-5h12m12 0h12M47 84q6 7 13 1m0 0q7 6 13-1" fill="none" stroke="#2B2118" stroke-linecap="round" stroke-width="3"/>
+</svg>
