@@ -36,12 +36,12 @@ const emit = defineEmits<{
 const AI_ACTION_DELAY_MS = 700
 const PATH_STROKE = '#2b2118'
 const BOARD_FACE = '#fffaf0'
-const SEAT_COUNT = 4
 const YARD_SLOT_COUNT = 4
 const CIRCLE_RADIUS = 0.36
 const HUB_RADIUS = 0.42
 const STACK_OFFSET_PX = 7
 const PIECE_BASE_Z_INDEX = 10
+const CONNECTOR_STROKE = 0.1
 
 const LOCATION_LABEL: Record<LudoMoveFrom, string> = {
   yard: 'Haus',
@@ -63,17 +63,38 @@ const COLOR_HEX: Record<LudoPlayerColor, string> = {
   green: '#66b57a',
 }
 
+const FRAME_STROKE = 0.2
+
 const CORNER_WASHES: ReadonlyArray<{
+  playerIndex: number
   color: LudoPlayerColor
   x: number
   y: number
   width: number
   height: number
 }> = [
-  { color: 'green', x: 0, y: 0, width: 4, height: 4 },
-  { color: 'red', x: 7, y: 0, width: 4, height: 4 },
-  { color: 'yellow', x: 7, y: 7, width: 4, height: 4 },
-  { color: 'blue', x: 0, y: 7, width: 4, height: 4 },
+  { playerIndex: 3, color: 'green', x: 0, y: 0, width: 4, height: 4 },
+  { playerIndex: 0, color: 'red', x: 7, y: 0, width: 4, height: 4 },
+  { playerIndex: 1, color: 'yellow', x: 7, y: 7, width: 4, height: 4 },
+  { playerIndex: 2, color: 'blue', x: 0, y: 7, width: 4, height: 4 },
+]
+
+/** Outer frame: green TL / red TR / yellow BR / blue BL */
+const FRAME_SEGMENTS: ReadonlyArray<{
+  color: LudoPlayerColor
+  x: number
+  y: number
+  width: number
+  height: number
+}> = [
+  { color: 'green', x: 0, y: 0, width: 5.5, height: FRAME_STROKE },
+  { color: 'green', x: 0, y: 0, width: FRAME_STROKE, height: 5.5 },
+  { color: 'red', x: 5.5, y: 0, width: 5.5, height: FRAME_STROKE },
+  { color: 'red', x: 11 - FRAME_STROKE, y: 0, width: FRAME_STROKE, height: 5.5 },
+  { color: 'yellow', x: 5.5, y: 11 - FRAME_STROKE, width: 5.5, height: FRAME_STROKE },
+  { color: 'yellow', x: 11 - FRAME_STROKE, y: 5.5, width: FRAME_STROKE, height: 5.5 },
+  { color: 'blue', x: 0, y: 11 - FRAME_STROKE, width: 5.5, height: FRAME_STROKE },
+  { color: 'blue', x: 0, y: 5.5, width: FRAME_STROKE, height: 5.5 },
 ]
 
 const game = createLudoGame({ playerCount: props.players.length })
@@ -81,6 +102,7 @@ const { play } = useSound()
 const state = ref<LudoGameState>(game.getState())
 let aiTimer: ReturnType<typeof setTimeout> | undefined
 
+const activeSeatCount = computed(() => props.players.length)
 const currentPlayer = computed(() => props.players[state.value.currentPlayerIndex])
 const isAiTurn = computed(() => currentPlayer.value?.type === 'ai')
 const validActions = computed(() => game.getValidActions())
@@ -91,24 +113,37 @@ const ringCells = Array.from({ length: LUDO_RING_SIZE }, (_, index) => getRingCe
 const ringEdges = getRingEdges()
 const centerCell = getCenterCell()
 
-const startCells = LUDO_START_INDEXES.map((ringIndex, playerIndex) => ({
-  cell: getRingCell(ringIndex),
-  color: LUDO_PLAYER_COLORS[playerIndex],
-}))
+const activeCornerWashes = computed(() =>
+  CORNER_WASHES.filter((wash) => wash.playerIndex < activeSeatCount.value),
+)
 
-const homeCells = Array.from({ length: SEAT_COUNT }, (_, playerIndex) =>
-  Array.from({ length: LUDO_HOME_LENGTH }, (_, homeStep) => ({
-    cell: getHomeCell(playerIndex, homeStep),
-    color: LUDO_PLAYER_COLORS[playerIndex],
-  })),
-).flat()
+const startCells = computed(() =>
+  LUDO_START_INDEXES
+    .map((ringIndex, playerIndex) => ({
+      cell: getRingCell(ringIndex),
+      color: LUDO_PLAYER_COLORS[playerIndex],
+      playerIndex,
+    }))
+    .filter((start) => start.playerIndex < activeSeatCount.value),
+)
 
-const yardCells = Array.from({ length: SEAT_COUNT }, (_, playerIndex) =>
-  Array.from({ length: YARD_SLOT_COUNT }, (_, slotIndex) => ({
-    cell: getYardCell(playerIndex, slotIndex),
-    color: LUDO_PLAYER_COLORS[playerIndex],
-  })),
-).flat()
+const homeCells = computed(() =>
+  Array.from({ length: activeSeatCount.value }, (_, playerIndex) =>
+    Array.from({ length: LUDO_HOME_LENGTH }, (_, homeStep) => ({
+      cell: getHomeCell(playerIndex, homeStep),
+      color: LUDO_PLAYER_COLORS[playerIndex],
+    })),
+  ).flat(),
+)
+
+const yardCells = computed(() =>
+  Array.from({ length: activeSeatCount.value }, (_, playerIndex) =>
+    Array.from({ length: YARD_SLOT_COUNT }, (_, slotIndex) => ({
+      cell: getYardCell(playerIndex, slotIndex),
+      color: LUDO_PLAYER_COLORS[playerIndex],
+    })),
+  ).flat(),
+)
 
 interface BoardPieceView {
   playerIndex: number
@@ -287,7 +322,17 @@ onBeforeUnmount(() => {
             aria-hidden="true"
           >
             <rect
-              v-for="wash in CORNER_WASHES"
+              v-for="(segment, segmentIndex) in FRAME_SEGMENTS"
+              :key="`frame-${segmentIndex}`"
+              :x="segment.x"
+              :y="segment.y"
+              :width="segment.width"
+              :height="segment.height"
+              :fill="COLOR_HEX[segment.color]"
+            />
+
+            <rect
+              v-for="wash in activeCornerWashes"
               :key="`wash-${wash.color}`"
               :x="wash.x"
               :y="wash.y"
@@ -306,7 +351,7 @@ onBeforeUnmount(() => {
               :x2="cellCenter(edge[1]).cx"
               :y2="cellCenter(edge[1]).cy"
               :stroke="PATH_STROKE"
-              stroke-width="0.08"
+              :stroke-width="CONNECTOR_STROKE"
               stroke-linecap="round"
             />
 
@@ -368,10 +413,12 @@ onBeforeUnmount(() => {
             v-for="piece in boardPieces"
             :key="`piece-${piece.playerIndex}-${piece.pieceIndex}`"
             type="button"
-            class="absolute z-10 flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition-[left,top,transform] duration-300 ease-out hover:scale-110 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] motion-reduce:transition-none sm:size-11"
+            class="absolute z-10 flex size-12 min-h-12 min-w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-sm font-black shadow-[0_2px_0_#4c3424] transition-[left,top,transform,box-shadow] duration-300 ease-out hover:scale-110 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] motion-reduce:transition-none"
             :class="[
               colorClass(piece.playerIndex),
-              canMovePiece(piece.playerIndex, piece.pieceIndex, piece.from) ? 'ring-4 ring-[var(--color-accent)] scale-110' : '',
+              canMovePiece(piece.playerIndex, piece.pieceIndex, piece.from)
+                ? 'z-20 scale-110 ring-4 ring-[var(--color-accent)] ring-offset-2 ring-offset-[#fffaf0] motion-safe:animate-pulse'
+                : '',
             ]"
             :style="piece.style"
             :disabled="!canMovePiece(piece.playerIndex, piece.pieceIndex, piece.from)"
