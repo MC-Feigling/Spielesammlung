@@ -35,4 +35,26 @@ describe('final review UI fixes', () => {
     expect(isFullyHome({ progress: 42 })).toBe(false)
     expect(isFullyHome({ progress: 43 })).toBe(true)
   })
+
+  it('highlights held kniffel dice without conflicting Tailwind utilities', () => {
+    const kniffelBoard = readSource('app/features/games/kniffel/KniffelBoard.vue')
+    const dieButton = kniffelBoard.match(/v-for="\(die, dieIndex\) in state\.dice"[\s\S]*?<\/button>/)?.[0]
+    const staticClass = dieButton?.match(/(?<!:)class="([^"]*)"/)?.[1] ?? ''
+    const dynamicClass = dieButton?.match(/:class="([\s\S]*?)"\n/)?.[1] ?? ''
+
+    expect(dieButton).toBeDefined()
+    expect(staticClass).not.toMatch(/\bbg-white\b/)
+    expect(staticClass).not.toMatch(/\bshadow-\[0_4px_0_#c48a4a\]\b/)
+    expect(dynamicClass).toMatch(/heldDice\[dieIndex\]\s*\?[\s\S]*?bg-\[#fff3c4\]/)
+    expect(dynamicClass).toMatch(/:\s*'[^']*\bbg-white\b/)
+  })
+
+  it('recomputes kniffel valid actions from reactive state', () => {
+    const kniffelBoard = readSource('app/features/games/kniffel/KniffelBoard.vue')
+    const validActions = kniffelBoard.match(/const validActions = computed\(\(\) => \{[\s\S]*?\n\}\)/)?.[0]
+
+    expect(validActions).toBeDefined()
+    expect(validActions).toMatch(/state\.value/)
+    expect(validActions).toMatch(/getValidActions\(\)/)
+  })
 })

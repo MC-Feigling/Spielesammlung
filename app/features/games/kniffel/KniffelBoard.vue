@@ -21,7 +21,10 @@ let aiTimer: ReturnType<typeof setTimeout> | undefined
 
 const currentPlayer = computed(() => props.players[state.value.currentPlayerIndex])
 const isAiTurn = computed(() => currentPlayer.value?.type === 'ai')
-const validActions = computed(() => game.getValidActions())
+const validActions = computed(() => {
+  void state.value
+  return game.getValidActions()
+})
 const canRoll = computed(() => validActions.value.some((action) => action.type === 'roll'))
 const canToggleHold = computed(() => validActions.value.some((action) => action.type === 'toggleHold'))
 const validCategories = computed(() => new Set(
@@ -99,8 +102,10 @@ onBeforeUnmount(() => {
             v-for="(die, dieIndex) in state.dice"
             :key="dieIndex"
             type="button"
-            class="aspect-square min-h-12 rounded-2xl border-4 border-[#9e3b24] bg-white text-2xl font-black text-[#4c3424] shadow-[0_4px_0_#c48a4a] transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:text-4xl"
-            :class="state.heldDice[dieIndex] ? 'bg-[#fff3c4] ring-4 ring-[var(--color-accent)]' : ''"
+            class="aspect-square min-h-12 rounded-2xl border-4 text-2xl font-black text-[#4c3424] transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:text-4xl"
+            :class="state.heldDice[dieIndex]
+              ? 'border-[var(--color-accent)] bg-[#fff3c4] shadow-[0_4px_0_#d45d3a] scale-[1.03]'
+              : 'border-[#9e3b24] bg-white shadow-[0_4px_0_#c48a4a]'"
             :disabled="isAiTurn || !canToggleHold"
             :aria-pressed="state.heldDice[dieIndex]"
             :aria-label="`${die} Augen${state.heldDice[dieIndex] ? ', gehalten' : ', halten'}`"

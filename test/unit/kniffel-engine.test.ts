@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { computed, ref } from 'vue'
 import { createKniffelGame } from '../../app/features/games/kniffel/engine'
 
 describe('kniffel engine', () => {
@@ -53,5 +54,20 @@ describe('kniffel engine', () => {
 
     expect(game.getValidActions().some((action) => action.type === 'roll')).toBe(false)
     expect(game.getValidActions().filter((action) => action.type === 'score')).toHaveLength(15)
+  })
+
+  it('exposes toggleHold in reactive validActions after the first roll', () => {
+    const game = createKniffelGame({ playerCount: 2, random: () => 0 })
+    const state = ref(game.getState())
+    const validActions = computed(() => {
+      void state.value
+      return game.getValidActions()
+    })
+
+    expect(validActions.value.some((action) => action.type === 'toggleHold')).toBe(false)
+
+    state.value = game.applyAction({ type: 'roll' }).state
+
+    expect(validActions.value.some((action) => action.type === 'toggleHold')).toBe(true)
   })
 })
