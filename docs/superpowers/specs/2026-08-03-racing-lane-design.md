@@ -36,7 +36,8 @@ app/features/games/racing/
 ### Track
 
 - `LANE_COUNT = 3` (Lanes `0 | 1 | 2`)
-- `TRACK_LENGTH` feste Distanz-Einheiten (Konstante in `engine.ts`)
+- `TRACK_LENGTH` feste Distanz für ca. **3 Minuten** Clean-Run (`BASE_SPEED * 180_000`)
+- Schwierigkeit steigt mit Progress: kürzeres Spawn-Intervall, später bis zu 2 von 3 Spuren blockiert (immer ≥1 Spur frei)
 - Hindernisse spawnen voraus auf einer Spur und bewegen sich relativ zur Scroll-Perspektive
 - Autos haben `progress` (0 → `TRACK_LENGTH`)
 - Shared Camera: Viewport folgt `max(car.progress)`; Autos bleiben im unteren Bilddrittel, Hindernisse scrollen relativ dazu

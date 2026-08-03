@@ -1,11 +1,12 @@
 import {
   LANE_COUNT,
+  VIEW_AHEAD,
   type RacingState,
 } from './engine'
 
 export type RacingLaneDelta = -1 | 1
 
-const LOOKAHEAD_PROGRESS = 20
+const LOOKAHEAD_PROGRESS = VIEW_AHEAD
 
 function hasObstacleAheadInLane(
   state: RacingState,

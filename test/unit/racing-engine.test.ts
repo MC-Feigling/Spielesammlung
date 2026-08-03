@@ -2,11 +2,24 @@ import { describe, expect, it } from 'vitest'
 import {
   BASE_SPEED,
   LANE_COUNT,
+  SPAWN_INTERVAL_END_MS,
+  SPAWN_INTERVAL_START_MS,
+  TARGET_RACE_MS,
   TRACK_LENGTH,
   createRacingGame,
+  difficultyFromProgress,
+  pickSpawnLanes,
+  spawnCountForDifficulty,
+  spawnIntervalMs,
 } from '../../app/features/games/racing/engine'
 
 describe('racing engine', () => {
+  it('targets about three minutes at base speed', () => {
+    expect(TRACK_LENGTH).toBe(BASE_SPEED * TARGET_RACE_MS)
+    expect(TRACK_LENGTH / BASE_SPEED).toBe(TARGET_RACE_MS)
+    expect(TARGET_RACE_MS).toBe(180_000)
+  })
+
   it('clamps lane changes to 0..LANE_COUNT-1', () => {
     const game = createRacingGame({
       players: [{ seatIndex: 0, type: 'human' }],
@@ -59,5 +72,23 @@ describe('racing engine', () => {
     const lane = game.state.cars[0]!.lane
     game.setLaneIntent(0, 1)
     expect(game.state.cars[0]!.lane).toBe(lane)
+  })
+
+  it('increases spawn pressure with progress', () => {
+    expect(difficultyFromProgress(0)).toBe(0)
+    expect(difficultyFromProgress(TRACK_LENGTH / 2)).toBeCloseTo(0.5)
+    expect(difficultyFromProgress(TRACK_LENGTH)).toBe(1)
+    expect(spawnIntervalMs(0)).toBe(SPAWN_INTERVAL_START_MS)
+    expect(spawnIntervalMs(1)).toBe(SPAWN_INTERVAL_END_MS)
+    expect(spawnIntervalMs(1)).toBeLessThan(spawnIntervalMs(0))
+    expect(spawnCountForDifficulty(0, () => 0)).toBe(1)
+    expect(spawnCountForDifficulty(1, () => 0)).toBe(2)
+  })
+
+  it('never blocks all lanes in one spawn wave', () => {
+    for (let i = 0; i < 20; i += 1) {
+      expect(pickSpawnLanes(3).length).toBeLessThan(LANE_COUNT)
+      expect(pickSpawnLanes(2).length).toBe(2)
+    }
   })
 })

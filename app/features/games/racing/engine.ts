@@ -1,13 +1,19 @@
 export const LANE_COUNT = 3
-export const TRACK_LENGTH = 120
-export const BASE_SPEED = 0.02 // progress units per ms
-export const SLOWDOWN_MS = 700
-export const SLOWDOWN_FACTOR = 0.35
+/** Clean-run target ≈ 3 minutes at BASE_SPEED. */
+export const TARGET_RACE_MS = 180_000
+export const BASE_SPEED = 0.015 // progress units per ms → 15/s
+export const TRACK_LENGTH = BASE_SPEED * TARGET_RACE_MS // 2700
+export const SLOWDOWN_MS = 500
+export const SLOWDOWN_FACTOR = 0.4
 export const COUNTDOWN_MS = 3000
-export const CAR_HITBOX = 2 // progress half-extent
-export const OBSTACLE_HITBOX = 1.5
-export const OBSTACLE_SPAWN_AHEAD = 40
-export const OBSTACLE_SPAWN_INTERVAL_MS = 900
+export const CAR_HITBOX = 1.8
+export const OBSTACLE_HITBOX = 1.4
+export const OBSTACLE_SPAWN_AHEAD = 36
+export const SPAWN_INTERVAL_START_MS = 1400
+export const SPAWN_INTERVAL_END_MS = 480
+/** How far ahead of the leader obstacles stay visible for playfeel (UI uses same idea). */
+export const VIEW_AHEAD = 42
+export const VIEW_BEHIND = 10
 
 export type RacingPhase = 'countdown' | 'racing' | 'finished'
 
@@ -46,6 +52,31 @@ export interface RacingGame {
 }
 
 const COLLISION_DISTANCE = CAR_HITBOX + OBSTACLE_HITBOX
+const ALL_LANES = [0, 1, 2] as const
+
+export function difficultyFromProgress(progress: number): number {
+  if (TRACK_LENGTH <= 0) return 0
+  return Math.min(1, Math.max(0, progress / TRACK_LENGTH))
+}
+
+export function spawnIntervalMs(difficulty: number): number {
+  const t = Math.min(1, Math.max(0, difficulty))
+  return Math.round(SPAWN_INTERVAL_START_MS + (SPAWN_INTERVAL_END_MS - SPAWN_INTERVAL_START_MS) * t)
+}
+
+/** At most 2 lanes blocked so one path stays open. */
+export function spawnCountForDifficulty(difficulty: number, random = Math.random): number {
+  if (difficulty < 0.25) return 1
+  if (difficulty < 0.55) return random() < 0.4 ? 2 : 1
+  if (difficulty < 0.8) return random() < 0.7 ? 2 : 1
+  return 2
+}
+
+export function pickSpawnLanes(count: number, random = Math.random): number[] {
+  const capped = Math.min(Math.max(count, 1), LANE_COUNT - 1)
+  const shuffled = [...ALL_LANES].sort(() => random() - 0.5)
+  return shuffled.slice(0, capped)
+}
 
 function clampLane(lane: number): number {
   return Math.max(0, Math.min(LANE_COUNT - 1, lane))
@@ -80,6 +111,10 @@ export function createRacingGame(config: {
   let nextObstacleId = 1
   let nextSpawnAtMs = 0
 
+  function leaderProgress(): number {
+    return state.cars.reduce((max, car) => Math.max(max, car.progress), 0)
+  }
+
   function applySlowdown(car: RacingCar): void {
     car.slowdownUntil = nowMs + SLOWDOWN_MS
     car.speed = BASE_SPEED * SLOWDOWN_FACTOR
@@ -99,19 +134,20 @@ export function createRacingGame(config: {
       return
     }
 
-    nextSpawnAtMs = nowMs + OBSTACLE_SPAWN_INTERVAL_MS
+    const difficulty = difficultyFromProgress(leaderProgress())
+    nextSpawnAtMs = nowMs + spawnIntervalMs(difficulty)
 
-    const cameraProgress = state.cars.reduce(
-      (max, car) => Math.max(max, car.progress),
-      0,
-    )
+    const cameraProgress = leaderProgress()
+    const lanes = pickSpawnLanes(spawnCountForDifficulty(difficulty))
 
-    state.obstacles.push({
-      id: nextObstacleId,
-      lane: Math.floor(Math.random() * LANE_COUNT),
-      progress: cameraProgress + OBSTACLE_SPAWN_AHEAD,
-    })
-    nextObstacleId += 1
+    for (const lane of lanes) {
+      state.obstacles.push({
+        id: nextObstacleId,
+        lane,
+        progress: cameraProgress + OBSTACLE_SPAWN_AHEAD,
+      })
+      nextObstacleId += 1
+    }
   }
 
   function resolveCollisions(): void {
@@ -125,6 +161,13 @@ export function createRacingGame(config: {
     }
   }
 
+  function pruneObstacles(): void {
+    const cameraProgress = leaderProgress()
+    state.obstacles = state.obstacles.filter(
+      (obstacle) => obstacle.progress >= cameraProgress - VIEW_BEHIND - 5,
+    )
+  }
+
   function checkFinish(): void {
     for (const car of state.cars) {
       if (car.progress >= TRACK_LENGTH) {
@@ -136,13 +179,15 @@ export function createRacingGame(config: {
   }
 
   function tickRacing(dtMs: number): void {
+    const step = Math.min(dtMs, 32)
     for (const car of state.cars) {
       refreshCarSpeed(car)
-      car.progress += car.speed * dtMs
+      car.progress += car.speed * step
     }
 
     spawnObstacles()
     resolveCollisions()
+    pruneObstacles()
     checkFinish()
   }
 
