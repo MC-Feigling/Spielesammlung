@@ -1,0 +1,100 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { GAMES, isGameId } from '~/constants/games'
+import type { GameId } from '~/types/game'
+import type { SessionPlayerInput } from '~/stores/session'
+
+const route = useRoute()
+const session = useSessionStore()
+const profilesStore = useProfilesStore()
+
+const routeGame = Array.isArray(route.params.game) ? route.params.game[0] : route.params.game
+const gameId = computed<GameId | null>(() => (typeof routeGame === 'string' && isGameId(routeGame) ? routeGame : null))
+const game = computed(() => GAMES.find((item) => item.id === gameId.value))
+
+if (!gameId.value) {
+  void navigateTo('/')
+}
+
+onMounted(() => {
+  if (gameId.value) {
+    session.startLobby(gameId.value)
+  }
+})
+
+function profilesForSeat(seatIndex: number) {
+  const assignedProfileIds = new Set(
+    session.seats
+      .filter((player) => player?.type === 'human' && player.seatIndex !== seatIndex)
+      .map((player) => player?.profileId),
+  )
+
+  return profilesStore.profiles.filter((profile) => !assignedProfileIds.has(profile.id))
+}
+
+function setPlayer(seatIndex: number, player: SessionPlayerInput | null) {
+  session.setSeat(seatIndex, player)
+}
+
+function setSeatCount(event: Event) {
+  session.setSeatCount(Number((event.target as HTMLSelectElement).value))
+}
+
+function startGame() {
+  session.beginPlay()
+}
+</script>
+
+<template>
+  <section v-if="game" aria-labelledby="lobby-heading" class="mx-auto max-w-3xl">
+    <NuxtLink
+      to="/"
+      class="inline-flex min-h-[var(--hit-min)] items-center font-bold text-[var(--color-felt)] underline decoration-2 underline-offset-4 focus-visible:outline-4 focus-visible:outline-[var(--color-accent)]"
+    >
+      ← Zurück zur Spielauswahl
+    </NuxtLink>
+
+    <div class="mt-5 rounded-3xl bg-[var(--color-panel)] p-6 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
+      <p class="font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">Spielrunde vorbereiten</p>
+      <h1 id="lobby-heading" class="mt-2 font-[var(--font-display)] text-4xl font-semibold sm:text-5xl">
+        {{ game.title }}
+      </h1>
+      <p class="mt-3 text-[var(--text-base)]">{{ game.blurb }}</p>
+
+      <label class="mt-6 block max-w-xs text-sm font-bold" for="seat-count">
+        Wie viele Plätze?
+      </label>
+      <select
+        id="seat-count"
+        class="mt-1 min-h-[var(--hit-min)] w-full max-w-xs rounded-2xl border-2 border-[#c48a4a] bg-white px-4 font-bold focus:outline-4 focus:outline-offset-2 focus:outline-[var(--color-accent)]"
+        :value="session.seatCount"
+        @change="setSeatCount"
+      >
+        <option :value="2">2 Plätze</option>
+        <option :value="3">3 Plätze</option>
+        <option :value="4">4 Plätze</option>
+      </select>
+    </div>
+
+    <div class="mt-7 grid gap-5 sm:grid-cols-2">
+      <PlayerSeat
+        v-for="(player, seatIndex) in session.seats"
+        :key="seatIndex"
+        :seat-index="seatIndex"
+        :player="player"
+        :profiles="profilesForSeat(seatIndex)"
+        @update:player="setPlayer(seatIndex, $event)"
+      />
+    </div>
+
+    <div class="mt-7 rounded-3xl bg-[#dceddc] p-5 text-[#27462f]">
+      <p class="font-bold">
+        {{ session.canBegin ? 'Die Runde kann starten!' : 'Mindestens zwei besetzte Plätze auswählen.' }}
+      </p>
+      <AppButton class="mt-4" block :disabled="!session.canBegin" @click="startGame">
+        Spiel starten
+        <span aria-hidden="true">→</span>
+      </AppButton>
+    </div>
+  </section>
+</template>
