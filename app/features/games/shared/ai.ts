@@ -13,3 +13,6 @@ export const KNIFFEL_EASY_BLUNDER_RATE = 0.4
 
 /** Chance that easy UNO AI picks a random legal action. */
 export const UNO_EASY_BLUNDER_RATE = 0.45
+
+/** Chance that easy Connect Four AI picks a random legal move. */
+export const CONNECT_FOUR_EASY_BLUNDER_RATE = 0.45
