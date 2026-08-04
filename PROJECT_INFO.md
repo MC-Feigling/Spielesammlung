@@ -26,7 +26,8 @@ Jugendschutz: `docs/superpowers/specs/2026-08-04-jugendschutz-spielzeit-design.m
 
 ## Plan
 
-Siehe `docs/superpowers/plans/2026-08-03-kinder-spielesammlung.md`
+Siehe `docs/superpowers/plans/2026-08-03-kinder-spielesammlung.md`  
+Jugendschutz: `docs/superpowers/plans/2026-08-04-jugendschutz-spielzeit.md`
 
 ## MVP-Spiele
 
