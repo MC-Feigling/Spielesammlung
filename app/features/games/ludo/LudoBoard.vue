@@ -23,7 +23,7 @@ import {
   type BoardCell,
 } from './boardLayout'
 import { chooseLudoAction } from './ai'
-import { canControlPiece, createLudoGame, type LudoAction, type LudoGameState, type LudoMoveFrom } from './engine'
+import { canControlPiece, createLudoGame, LUDO_YARD_ROLL_ATTEMPTS_MAX, type LudoAction, type LudoGameState, type LudoMoveFrom } from './engine'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -111,13 +111,33 @@ const validActions = computed(() => {
 })
 const canRoll = computed(() => validActions.value.some((action) => action.type === 'roll'))
 const moveActions = computed(() => validActions.value.filter((action): action is Extract<LudoAction, { type: 'move' }> => action.type === 'move'))
+
+function allPiecesInYard(playerIndex: number) {
+  return state.value.pieces[playerIndex].every((piece) => isInYard(piece))
+}
+
+const allCurrentPiecesInYard = computed(() => allPiecesInYard(state.value.currentPlayerIndex))
+
 const turnHint = computed(() => {
   if (isAiTurn.value) return 'Die KI zieht…'
-  if (canRoll.value) return 'Würfle. Mit einer 6 stellst du eine Figur aus dem Haus.'
+  if (canRoll.value) {
+    if (allCurrentPiecesInYard.value) {
+      const attempt = state.value.yardRollAttempts + 1
+      return `Keine Figur auf dem Brett: Würfelversuch ${attempt}/${LUDO_YARD_ROLL_ATTEMPTS_MAX}. Du brauchst eine 6.`
+    }
+    return 'Würfle. Mit einer 6 darfst du noch einmal würfeln.'
+  }
   if (moveActions.value.some((action) => action.from === 'yard')) {
     return 'Tippe eine leuchtende Figur im Haus an, um sie aufs Brett zu stellen.'
   }
   return 'Tippe eine leuchtende Figur an, um zu ziehen.'
+})
+
+const diceHelpText = computed(() => {
+  if (allCurrentPiecesInYard.value) {
+    return `Ohne Figur auf dem Brett: bis zu ${LUDO_YARD_ROLL_ATTEMPTS_MAX} Würfelversuche für eine 6.`
+  }
+  return 'Mit einer 6 darfst du noch einmal würfeln.'
 })
 
 const ringCells = Array.from({ length: LUDO_RING_SIZE }, (_, index) => getRingCell(index))
@@ -450,7 +470,7 @@ onBeforeUnmount(() => {
           <AppButton class="mt-4" block :disabled="isAiTurn || !canRoll" @click="rollDice">
             Würfeln
           </AppButton>
-          <p class="mt-3 text-sm">Mit einer 6 darfst du noch einmal würfeln.</p>
+          <p class="mt-3 text-sm">{{ diceHelpText }}</p>
         </div>
 
         <div

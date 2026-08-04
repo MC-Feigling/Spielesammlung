@@ -30,6 +30,8 @@ export interface LudoGameState {
   pendingRoll: number | null
   pieces: LudoPiece[][]
   lastEvent: LudoEvent
+  /** Failed yard-entry rolls this turn (0–2 while retries remain). */
+  yardRollAttempts: number
 }
 
 export interface LudoGameStateInput {
@@ -37,10 +39,12 @@ export interface LudoGameStateInput {
   currentPlayerIndex: number
   pendingRoll: number | null
   pieces: LudoPiece[][]
+  yardRollAttempts?: number
 }
 
 const MIN_DIE_VALUE = 1
 const MAX_DIE_VALUE = 6
+export const LUDO_YARD_ROLL_ATTEMPTS_MAX = 3
 
 export function canControlPiece(state: LudoGameState, playerIndex: number): boolean {
   return playerIndex === state.currentPlayerIndex
@@ -89,11 +93,20 @@ function validateState(input: LudoGameStateInput) {
   if (input.pieces.some((pieces) => pieces.some((piece) => !Number.isInteger(piece.progress) || piece.progress < LUDO_YARD_PROGRESS || piece.progress > LUDO_HOME_END_PROGRESS))) {
     throw new Error('Eine Figurenposition ist ungültig')
   }
+
+  const yardRollAttempts = input.yardRollAttempts ?? 0
+  if (!Number.isInteger(yardRollAttempts) || yardRollAttempts < 0 || yardRollAttempts >= LUDO_YARD_ROLL_ATTEMPTS_MAX) {
+    throw new Error('Die Haus-Würfelversuche sind ungültig')
+  }
 }
 
 function moveFrom(piece: LudoPiece): LudoMoveFrom {
   if (isInYard(piece)) return 'yard'
   return isInHome(piece) ? 'home' : 'ring'
+}
+
+function allPiecesInYard(state: LudoGameState, playerIndex: number): boolean {
+  return state.pieces[playerIndex].every((piece) => isInYard(piece))
 }
 
 function getMoveActions(state: LudoGameState): Extract<LudoAction, { type: 'move' }>[] {
@@ -116,6 +129,15 @@ function winnerSeatIndexes(state: LudoGameState): number[] {
   return state.pieces.flatMap((pieces, playerIndex) => (
     pieces.every((piece) => piece.progress === LUDO_HOME_END_PROGRESS) ? [playerIndex] : []
   ))
+}
+
+function advanceTurn(state: LudoGameState): LudoGameState {
+  return {
+    ...state,
+    currentPlayerIndex: (state.currentPlayerIndex + 1) % state.playerCount,
+    pendingRoll: null,
+    yardRollAttempts: 0,
+  }
 }
 
 function createGame(initialState: LudoGameState, random: () => number): GameEngine<LudoGameState, LudoAction> {
@@ -145,14 +167,27 @@ function createGame(initialState: LudoGameState, random: () => number): GameEngi
       }
 
       const pendingRoll = action.forcedValue ?? Math.floor(random() * MAX_DIE_VALUE) + MIN_DIE_VALUE
+      const rollingPlayerIndex = state.currentPlayerIndex
       state = { ...state, pendingRoll, lastEvent: null }
-      if (getMoveActions(state).length === 0) {
-        state = {
-          ...state,
-          currentPlayerIndex: (state.currentPlayerIndex + 1) % state.playerCount,
-          pendingRoll: null,
+
+      if (getMoveActions(state).length > 0) {
+        state = { ...state, yardRollAttempts: 0 }
+        return result()
+      }
+
+      if (allPiecesInYard(state, rollingPlayerIndex)) {
+        const attempts = state.yardRollAttempts + 1
+        if (attempts < LUDO_YARD_ROLL_ATTEMPTS_MAX) {
+          state = {
+            ...state,
+            pendingRoll: null,
+            yardRollAttempts: attempts,
+          }
+          return result()
         }
       }
+
+      state = advanceTurn(state)
       return result()
     }
 
@@ -183,12 +218,14 @@ function createGame(initialState: LudoGameState, random: () => number): GameEngi
       })
     }
 
+    const keepsTurn = roll === MAX_DIE_VALUE
     state = {
       ...state,
       pieces,
-      currentPlayerIndex: roll === MAX_DIE_VALUE ? movingPlayerIndex : (movingPlayerIndex + 1) % state.playerCount,
+      currentPlayerIndex: keepsTurn ? movingPlayerIndex : (movingPlayerIndex + 1) % state.playerCount,
       pendingRoll: null,
       lastEvent: captured ? 'capture' : null,
+      yardRollAttempts: 0,
     }
     return result()
   }
@@ -206,6 +243,7 @@ export function createLudoGame(options: LudoGameOptions): GameEngine<LudoGameSta
       Array.from({ length: LUDO_PIECES_PER_PLAYER }, () => ({ progress: LUDO_YARD_PROGRESS }))
     )),
     lastEvent: null,
+    yardRollAttempts: 0,
   }
 
   return createGame(initialState, createSeededRandom(options.seed ?? Date.now()))
@@ -213,5 +251,12 @@ export function createLudoGame(options: LudoGameOptions): GameEngine<LudoGameSta
 
 export function createLudoGameFromState(input: LudoGameStateInput): GameEngine<LudoGameState, LudoAction> {
   validateState(input)
-  return createGame({ ...input, pieces: input.pieces, lastEvent: null }, Math.random)
+  return createGame({
+    playerCount: input.playerCount,
+    currentPlayerIndex: input.currentPlayerIndex,
+    pendingRoll: input.pendingRoll,
+    pieces: input.pieces,
+    lastEvent: null,
+    yardRollAttempts: input.yardRollAttempts ?? 0,
+  }, Math.random)
 }

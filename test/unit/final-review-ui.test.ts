@@ -21,7 +21,9 @@ describe('final review UI fixes', () => {
     expect(kniffelBoard).toContain(":hint=\"isAiTurn ? 'Die KI würfelt…' : 'Würfle und trage Punkte ein.'\"")
     expect(ludoBoard).toContain(':hint="turnHint"')
     expect(ludoBoard).toContain('Tippe eine leuchtende Figur im Haus an')
-    expect(ludoBoard).toContain('Mit einer 6 stellst du eine Figur aus dem Haus')
+    expect(ludoBoard).toContain('Würfelversuch')
+    expect(ludoBoard).toContain('LUDO_YARD_ROLL_ATTEMPTS_MAX')
+    expect(ludoBoard).toContain('diceHelpText')
   })
 
   it('navigates away before clearing the active session', () => {
