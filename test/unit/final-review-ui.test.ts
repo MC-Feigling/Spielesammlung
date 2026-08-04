@@ -19,7 +19,9 @@ describe('final review UI fixes', () => {
     expect(turnBanner).toContain('{{ hint }}')
     expect(memoryBoard).toContain(":hint=\"isAiTurn ? 'Die Karten werden gleich aufgedeckt.' : 'Finde zwei gleiche Karten.'\"")
     expect(kniffelBoard).toContain(":hint=\"isAiTurn ? 'Die KI würfelt…' : 'Würfle und trage Punkte ein.'\"")
-    expect(ludoBoard).toContain(":hint=\"isAiTurn ? 'Die KI zieht…' : 'Würfle und ziehe deine Figur.'\"")
+    expect(ludoBoard).toContain(':hint="turnHint"')
+    expect(ludoBoard).toContain('Tippe eine leuchtende Figur im Haus an')
+    expect(ludoBoard).toContain('Mit einer 6 stellst du eine Figur aus dem Haus')
   })
 
   it('navigates away before clearing the active session', () => {
@@ -52,6 +54,15 @@ describe('final review UI fixes', () => {
   it('recomputes kniffel valid actions from reactive state', () => {
     const kniffelBoard = readSource('app/features/games/kniffel/KniffelBoard.vue')
     const validActions = kniffelBoard.match(/const validActions = computed\(\(\) => \{[\s\S]*?\n\}\)/)?.[0]
+
+    expect(validActions).toBeDefined()
+    expect(validActions).toMatch(/state\.value/)
+    expect(validActions).toMatch(/getValidActions\(\)/)
+  })
+
+  it('recomputes ludo valid actions from reactive state', () => {
+    const ludoBoard = readSource('app/features/games/ludo/LudoBoard.vue')
+    const validActions = ludoBoard.match(/const validActions = computed\(\(\) => \{[\s\S]*?\n\}\)/)?.[0]
 
     expect(validActions).toBeDefined()
     expect(validActions).toMatch(/state\.value/)

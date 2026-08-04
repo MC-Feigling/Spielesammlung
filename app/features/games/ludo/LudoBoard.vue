@@ -105,9 +105,20 @@ let aiTimer: ReturnType<typeof setTimeout> | undefined
 const activeSeatCount = computed(() => props.players.length)
 const currentPlayer = computed(() => props.players[state.value.currentPlayerIndex])
 const isAiTurn = computed(() => currentPlayer.value?.type === 'ai')
-const validActions = computed(() => game.getValidActions())
+const validActions = computed(() => {
+  void state.value
+  return game.getValidActions()
+})
 const canRoll = computed(() => validActions.value.some((action) => action.type === 'roll'))
 const moveActions = computed(() => validActions.value.filter((action): action is Extract<LudoAction, { type: 'move' }> => action.type === 'move'))
+const turnHint = computed(() => {
+  if (isAiTurn.value) return 'Die KI zieht…'
+  if (canRoll.value) return 'Würfle. Mit einer 6 stellst du eine Figur aus dem Haus.'
+  if (moveActions.value.some((action) => action.from === 'yard')) {
+    return 'Tippe eine leuchtende Figur im Haus an, um sie aufs Brett zu stellen.'
+  }
+  return 'Tippe eine leuchtende Figur an, um zu ziehen.'
+})
 
 const ringCells = Array.from({ length: LUDO_RING_SIZE }, (_, index) => getRingCell(index))
 const ringEdges = getRingEdges()
@@ -305,7 +316,7 @@ onBeforeUnmount(() => {
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
       :is-ai="isAiTurn"
-      :hint="isAiTurn ? 'Die KI zieht…' : 'Würfle und ziehe deine Figur.'"
+      :hint="turnHint"
     />
 
     <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_15rem]">
