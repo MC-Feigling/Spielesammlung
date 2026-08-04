@@ -9,7 +9,17 @@ export interface Profile {
   createdAt: string
 }
 
+export interface ParentalControls {
+  pinHash: string | null
+  dailyLimitMinutes: number
+  usedMsToday: number
+  dayKey: string
+  extraMsToday: number
+  warnAtMinutes: number
+}
+
 export interface Settings {
   soundEnabled: boolean
   uiScale: UiScale
+  parental: ParentalControls
 }
