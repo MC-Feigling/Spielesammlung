@@ -161,6 +161,11 @@ function handleClick() {
   transform: scale(1.03);
 }
 
+.dice-root--held .dice-face {
+  border-color: var(--color-accent);
+  background: #fff3c4;
+}
+
 .dice-root--rolling {
   border-color: #9e3b24;
   box-shadow: 0 4px 0 #c48a4a;
