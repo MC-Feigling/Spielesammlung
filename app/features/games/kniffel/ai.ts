@@ -1,6 +1,7 @@
 import {
   DEFAULT_AI_DIFFICULTY,
   KNIFFEL_EASY_BLUNDER_RATE,
+  KNIFFEL_MEDIUM_BLUNDER_RATE,
   type AiDifficulty,
 } from '../shared/ai'
 import type { KniffelAction, KniffelGameState } from './engine'
@@ -68,7 +69,13 @@ export function chooseKniffelAction(
   const bestCategory = chooseBestScore(availableCategories, state.dice)
 
   if (bestCategory) {
-    if (difficulty === 'easy' && availableCategories.length > 1 && random() < KNIFFEL_EASY_BLUNDER_RATE) {
+    const blunderRate = (
+      difficulty === 'easy' ? KNIFFEL_EASY_BLUNDER_RATE
+        : difficulty === 'medium' ? KNIFFEL_MEDIUM_BLUNDER_RATE
+          : 0
+    )
+
+    if (blunderRate > 0 && availableCategories.length > 1 && random() < blunderRate) {
       const randomIndex = Math.floor(random() * availableCategories.length)
       return {
         type: 'score',

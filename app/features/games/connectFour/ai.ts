@@ -1,5 +1,6 @@
 import {
   CONNECT_FOUR_EASY_BLUNDER_RATE,
+  CONNECT_FOUR_MEDIUM_BLUNDER_RATE,
   DEFAULT_AI_DIFFICULTY,
   type AiDifficulty,
 } from '../shared/ai'
@@ -115,7 +116,13 @@ export function chooseConnectFourAction(
   const difficulty = options.difficulty ?? DEFAULT_AI_DIFFICULTY
   const random = options.random ?? Math.random
 
-  if (difficulty === 'easy' && actions.length > 1 && random() < CONNECT_FOUR_EASY_BLUNDER_RATE) {
+  const blunderRate = (
+    difficulty === 'easy' ? CONNECT_FOUR_EASY_BLUNDER_RATE
+      : difficulty === 'medium' ? CONNECT_FOUR_MEDIUM_BLUNDER_RATE
+        : 0
+  )
+
+  if (blunderRate > 0 && actions.length > 1 && random() < blunderRate) {
     const randomIndex = Math.floor(random() * actions.length)
     return actions[Math.min(randomIndex, actions.length - 1)]!
   }

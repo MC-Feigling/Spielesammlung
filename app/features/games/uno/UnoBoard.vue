@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
+import { useSessionStore } from '~/stores/session'
 import { chooseUnoAction } from './ai'
 import {
   createUnoGame,
@@ -67,6 +68,8 @@ const WILD_COLORS: readonly UnoColor[] = ['red', 'yellow', 'green', 'blue']
 const game = createUnoGame({ playerCount: props.players.length })
 const { play } = useSound()
 const state = ref<UnoGameState>(game.getState())
+const session = useSessionStore()
+const aiDifficulty = computed(() => session.aiDifficulty)
 const pendingWildCardId = ref<string | null>(null)
 let aiTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -175,7 +178,7 @@ function scheduleAiAction() {
 
   aiTimer = setTimeout(() => {
     aiTimer = undefined
-    const action = chooseUnoAction(state.value, game.getValidActions())
+    const action = chooseUnoAction(state.value, game.getValidActions(), { difficulty: aiDifficulty.value })
     if (action) applyAction(action)
   }, AI_ACTION_DELAY_MS)
 }

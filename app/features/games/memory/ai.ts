@@ -1,6 +1,7 @@
 import {
   DEFAULT_AI_DIFFICULTY,
   MEMORY_EASY_FORGET_RATE,
+  MEMORY_MEDIUM_FORGET_RATE,
   type AiDifficulty,
 } from '../shared/ai'
 import type { MemoryAction, MemoryGameState } from './engine'
@@ -39,7 +40,9 @@ export function createMemoryAi(options: MemoryAiOptions = {}): MemoryAi {
   }
 
   function shouldForgetKnownMatch(): boolean {
-    return difficulty === 'easy' && random() < MEMORY_EASY_FORGET_RATE
+    if (difficulty === 'easy') return random() < MEMORY_EASY_FORGET_RATE
+    if (difficulty === 'medium') return random() < MEMORY_MEDIUM_FORGET_RATE
+    return false
   }
 
   function chooseAction(state: MemoryGameState): MemoryAction | null {

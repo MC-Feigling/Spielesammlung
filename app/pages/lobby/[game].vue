@@ -4,6 +4,7 @@ import { GAMES, isGameId } from '~/constants/games'
 import { isConnectFourRosterValid } from '~/features/games/connectFour/lobby'
 import { isRacingRosterValid } from '~/features/games/racing/lobby'
 import { isUnoRosterValid } from '~/features/games/uno/lobby'
+import type { AiDifficulty } from '~/features/games/shared/ai'
 import type { GameId } from '~/types/game'
 import type { SessionPlayerInput } from '~/stores/session'
 
@@ -28,6 +29,8 @@ const canStart = computed(() => {
   }
   return true
 })
+
+const hasAi = computed(() => session.players.some((player) => player.type === 'ai'))
 
 const lobbyHint = computed(() => {
   if (canStart.value) return 'Die Runde kann starten!'
@@ -73,6 +76,10 @@ function setSeatCount(event: Event) {
 
 function setMemoryGridSize(event: Event) {
   session.setMemoryGridSize((event.target as HTMLSelectElement).value as '4x3' | '4x4')
+}
+
+function setAiDifficulty(event: Event) {
+  session.setAiDifficulty((event.target as HTMLSelectElement).value as AiDifficulty)
 }
 
 function startGame() {
@@ -129,6 +136,25 @@ function leaveLobby() {
           <option value="4x4">Groß – 16 Karten</option>
         </select>
       </template>
+    </div>
+
+    <div v-if="hasAi" class="mt-6 rounded-3xl bg-[#dceddc] p-4 text-[#27462f]">
+      <label class="block text-sm font-bold" for="ai-difficulty">
+        Schwierigkeitsgrad (KI)
+      </label>
+      <select
+        id="ai-difficulty"
+        class="mt-2 min-h-[var(--hit-min)] w-full rounded-2xl border-2 border-[#c48a4a] bg-white px-4 font-bold focus:outline-4 focus:outline-offset-2 focus:outline-[var(--color-accent)]"
+        :value="session.aiDifficulty"
+        @change="setAiDifficulty"
+      >
+        <option value="easy">Leicht</option>
+        <option value="medium">Mittel</option>
+        <option value="hard">Schwer</option>
+      </select>
+      <p class="mt-2 text-xs font-bold text-[#7a5a3a]">
+        Gilt für alle Robo-Spieler dieser Runde.
+      </p>
     </div>
 
     <div class="mt-7 grid gap-5 sm:grid-cols-2">

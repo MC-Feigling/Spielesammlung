@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
+import { useSessionStore } from '~/stores/session'
 import {
   getRingIndex,
   isFullyHome,
@@ -100,6 +101,8 @@ const FRAME_SEGMENTS: ReadonlyArray<{
 const game = createLudoGame({ playerCount: props.players.length })
 const { play } = useSound()
 const state = ref<LudoGameState>(game.getState())
+const session = useSessionStore()
+const aiDifficulty = computed(() => session.aiDifficulty)
 let aiTimer: ReturnType<typeof setTimeout> | undefined
 
 const activeSeatCount = computed(() => props.players.length)
@@ -314,7 +317,7 @@ function scheduleAiAction() {
 
   aiTimer = setTimeout(() => {
     aiTimer = undefined
-    const action = chooseLudoAction(state.value, game.getValidActions())
+    const action = chooseLudoAction(state.value, game.getValidActions(), { difficulty: aiDifficulty.value })
     if (action) applyAction(action)
   }, AI_ACTION_DELAY_MS)
 }

@@ -1,6 +1,7 @@
 import {
   DEFAULT_AI_DIFFICULTY,
   LUDO_EASY_BLUNDER_RATE,
+  LUDO_MEDIUM_BLUNDER_RATE,
   type AiDifficulty,
 } from '../shared/ai'
 import { getRingIndex, isInYard } from './board'
@@ -62,7 +63,13 @@ export function chooseLudoAction(
 
   const optimal = chooseOptimalMove(state, moves)
 
-  if (difficulty === 'easy' && moves.length > 1 && random() < LUDO_EASY_BLUNDER_RATE) {
+  const blunderRate = (
+    difficulty === 'easy' ? LUDO_EASY_BLUNDER_RATE
+      : difficulty === 'medium' ? LUDO_MEDIUM_BLUNDER_RATE
+        : 0
+  )
+
+  if (blunderRate > 0 && moves.length > 1 && random() < blunderRate) {
     const alternatives = moves.filter((action) => (
       action.pieceIndex !== optimal.pieceIndex || action.from !== optimal.from
     ))

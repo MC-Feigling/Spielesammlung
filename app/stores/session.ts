@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { GameId, SessionPlayer } from '~/types/game'
+import { AI_DIFFICULTIES, DEFAULT_AI_DIFFICULTY, type AiDifficulty } from '../features/games/shared/ai'
 
 export type SessionSeat = SessionPlayer | null
 export type SessionPlayerInput = Omit<SessionPlayer, 'seatIndex'>
@@ -38,6 +39,7 @@ export const useSessionStore = defineStore('session', () => {
   const gameId = ref<GameId | null>(null)
   const seats = ref<SessionSeat[]>(createSeats(MIN_SEAT_COUNT))
   const memoryGridSize = ref<MemoryGridSize>(DEFAULT_MEMORY_GRID_SIZE)
+  const aiDifficulty = ref<AiDifficulty>(DEFAULT_AI_DIFFICULTY)
 
   const players = computed(() => seats.value.filter(isValidSessionPlayer))
   const seatCount = computed(() => seats.value.length)
@@ -47,6 +49,7 @@ export const useSessionStore = defineStore('session', () => {
     gameId.value = nextGameId
     seats.value = createSeats(MIN_SEAT_COUNT)
     memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
+    aiDifficulty.value = DEFAULT_AI_DIFFICULTY
   }
 
   function setSeatCount(nextSeatCount: number) {
@@ -83,6 +86,14 @@ export const useSessionStore = defineStore('session', () => {
     memoryGridSize.value = nextGridSize
   }
 
+  function setAiDifficulty(nextDifficulty: AiDifficulty) {
+    if (!AI_DIFFICULTIES.includes(nextDifficulty)) {
+      throw new Error('Ungültiger KI-Schwierigkeitsgrad')
+    }
+
+    aiDifficulty.value = nextDifficulty
+  }
+
   function beginPlay(): boolean {
     if (!gameId.value || !canBegin.value) return false
 
@@ -94,12 +105,14 @@ export const useSessionStore = defineStore('session', () => {
     gameId.value = null
     seats.value = createSeats(MIN_SEAT_COUNT)
     memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
+    aiDifficulty.value = DEFAULT_AI_DIFFICULTY
   }
 
   return {
     gameId,
     seats,
     memoryGridSize,
+    aiDifficulty,
     players,
     seatCount,
     canBegin,
@@ -107,6 +120,7 @@ export const useSessionStore = defineStore('session', () => {
     setSeatCount,
     setSeat,
     setMemoryGridSize,
+    setAiDifficulty,
     beginPlay,
     endSession,
   }

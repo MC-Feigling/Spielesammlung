@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
+import { useSessionStore } from '~/stores/session'
 import { chooseConnectFourAction } from './ai'
 import { createConnectFourGame, type ConnectFourAction, type ConnectFourGameState } from './engine'
 
@@ -20,6 +21,8 @@ const FALLBACK_COLORS = ['#e7674c', '#f2bf4f'] as const
 const game = createConnectFourGame()
 const { play } = useSound()
 const state = ref<ConnectFourGameState>(game.getState())
+const session = useSessionStore()
+const aiDifficulty = computed(() => session.aiDifficulty)
 let aiTimer: ReturnType<typeof setTimeout> | undefined
 
 const currentPlayer = computed(() => props.players[state.value.currentPlayerIndex])
@@ -61,7 +64,7 @@ function scheduleAiAction() {
 
   aiTimer = setTimeout(() => {
     aiTimer = undefined
-    const action = chooseConnectFourAction(state.value, game.getValidActions())
+    const action = chooseConnectFourAction(state.value, game.getValidActions(), { difficulty: aiDifficulty.value })
     if (action) applyAction(action)
   }, AI_ACTION_DELAY_MS)
 }
