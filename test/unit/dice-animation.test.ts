@@ -23,6 +23,15 @@ describe('dice 3d animation', () => {
     expect(diceDie).toContain('prefers-reduced-motion')
   })
 
+  it('colors held dice faces so the hold state stays visible on the 3d cube', () => {
+    const diceDie = readSource('app/components/game/DiceDie.vue')
+
+    expect(diceDie).toContain('dice-root--held')
+    expect(diceDie).toMatch(/\.dice-root--held\s+\.dice-face\s*\{/)
+    expect(diceDie).toMatch(/\.dice-root--held\s+\.dice-face[\s\S]*?background:\s*#fff3c4/)
+    expect(diceDie).toMatch(/\.dice-root--held\s+\.dice-face[\s\S]*?border-color:\s*var\(--color-accent\)/)
+  })
+
   it('uses roll animation composable in dice games', () => {
     const kniffelBoard = readSource('app/features/games/kniffel/KniffelBoard.vue')
     const shutTheBoxBoard = readSource('app/features/games/shutTheBox/ShutTheBoxBoard.vue')
