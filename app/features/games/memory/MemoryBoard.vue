@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-4xl">
+  <section class="mx-auto max-w-2xl">
     <TurnBanner
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
@@ -108,15 +108,15 @@ onBeforeUnmount(() => {
       :hint="isAiTurn ? 'Die Karten werden gleich aufgedeckt.' : 'Finde zwei gleiche Karten.'"
     />
 
-    <div class="mt-6 grid gap-2 sm:gap-3" :style="gridStyle">
+    <div class="mt-4 grid gap-1.5 sm:mt-6 sm:gap-2" :style="gridStyle">
       <button
         v-for="(pairId, cardIndex) in state.cards"
         :key="cardIndex"
         type="button"
-        class="aspect-[3/4] min-h-[72px] rounded-2xl border-4 text-3xl shadow-[0_4px_0_#9e3b24] transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:text-5xl"
+        class="aspect-square rounded-xl border-2 text-xl shadow-[0_3px_0_#9e3b24] transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:text-2xl md:text-3xl"
         :class="isCardRevealed(cardIndex)
-          ? 'border-[#dfbd8c] bg-[var(--color-panel)] shadow-[0_4px_0_#c48a4a]'
-          : 'border-[#9e3b24] bg-[var(--color-accent)] text-white hover:-translate-y-0.5 hover:shadow-[0_6px_0_#9e3b24]'"
+          ? 'border-[#dfbd8c] bg-[var(--color-panel)] shadow-[0_3px_0_#c48a4a]'
+          : 'border-[#9e3b24] bg-[var(--color-accent)] text-white hover:-translate-y-0.5 hover:shadow-[0_4px_0_#9e3b24]'"
         :disabled="!validFlipIndexes.has(cardIndex) || isAiTurn"
         :aria-label="isCardRevealed(cardIndex) ? `Karte ${cardIndex + 1}: ${CARD_SYMBOLS[pairId]}` : `Karte ${cardIndex + 1} aufdecken`"
         @click="flipCard(cardIndex)"
@@ -125,11 +125,11 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <dl class="mt-6 grid gap-3 sm:grid-cols-2">
+    <dl class="mt-4 grid gap-2 sm:mt-6 sm:grid-cols-2 sm:gap-3">
       <div
         v-for="(player, playerIndex) in players"
         :key="player.seatIndex"
-        class="rounded-2xl bg-[var(--color-panel)] px-4 py-3 ring-2 ring-[#dfbd8c]"
+        class="rounded-xl bg-[var(--color-panel)] px-3 py-2 ring-2 ring-[#dfbd8c] sm:rounded-2xl sm:px-4 sm:py-3"
         :class="playerIndex === state.currentPlayerIndex ? 'ring-[var(--color-accent)]' : ''"
       >
         <dt class="font-bold">{{ player.displayName }}</dt>
