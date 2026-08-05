@@ -81,7 +81,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-3xl">
+  <section class="mx-auto w-full max-w-md sm:max-w-lg">
     <TurnBanner
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
@@ -90,16 +90,16 @@ onBeforeUnmount(() => {
     />
 
     <div
-      class="mt-6 rounded-3xl bg-[#3b6ea5] p-3 shadow-[0_6px_0_#2a4f78] ring-2 ring-[#2a4f78] sm:p-4"
+      class="mt-4 rounded-2xl bg-[#3b6ea5] p-2 shadow-[0_4px_0_#2a4f78] ring-2 ring-[#2a4f78] sm:mt-6 sm:rounded-3xl sm:p-3 sm:shadow-[0_6px_0_#2a4f78]"
       role="grid"
       aria-label="Vier gewinnt Brett"
     >
-      <div class="grid grid-cols-7 gap-1.5 sm:gap-2">
+      <div class="grid grid-cols-7 gap-1 sm:gap-1.5">
         <button
           v-for="column in columns"
           :key="`drop-${column}`"
           type="button"
-          class="min-h-[var(--hit-min)] rounded-2xl bg-[#2a4f78]/35 text-sm font-bold text-white transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:translate-y-0 disabled:opacity-50"
+          class="min-h-8 rounded-xl bg-[#2a4f78]/35 text-xs font-bold text-white transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:translate-y-0 disabled:opacity-50 sm:min-h-9 sm:rounded-2xl sm:text-sm"
           :disabled="isAiTurn || !validColumns.has(column)"
           :aria-label="`Spalte ${column + 1}`"
           @click="dropInColumn(column)"
@@ -108,12 +108,12 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2" role="presentation">
+      <div class="mt-1.5 grid grid-cols-7 gap-1 sm:mt-2 sm:gap-1.5" role="presentation">
         <template v-for="row in displayRows" :key="`row-${row}`">
           <div
             v-for="column in columns"
             :key="`${column}-${row}`"
-            class="aspect-square rounded-full border-4 border-[#2a4f78] bg-[#dce9f7] shadow-inner"
+            class="aspect-square rounded-full border-2 border-[#2a4f78] bg-[#dce9f7] shadow-inner sm:border-[3px]"
             role="gridcell"
             :aria-label="state.cells[column]![row] === null
               ? `Spalte ${column + 1}, Reihe ${row + 1}: leer`
@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
           >
             <span
               v-if="state.cells[column]![row] !== null"
-              class="block h-full w-full rounded-full border-4 border-black/15 shadow-[0_3px_0_rgba(0,0,0,0.2)]"
+              class="block h-full w-full rounded-full border-2 border-black/15 shadow-[0_2px_0_rgba(0,0,0,0.2)] sm:border-[3px] sm:shadow-[0_3px_0_rgba(0,0,0,0.2)]"
               :style="{ backgroundColor: seatColor(state.cells[column]![row]!) }"
               aria-hidden="true"
             />
@@ -130,15 +130,15 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <dl class="mt-6 grid gap-3 sm:grid-cols-2">
+    <dl class="mt-4 grid gap-2 sm:mt-6 sm:grid-cols-2 sm:gap-3">
       <div
         v-for="(player, playerIndex) in players"
         :key="player.seatIndex"
-        class="flex items-center gap-3 rounded-2xl bg-[var(--color-panel)] px-4 py-3 ring-2 ring-[#dfbd8c]"
+        class="flex items-center gap-2 rounded-xl bg-[var(--color-panel)] px-3 py-2 ring-2 ring-[#dfbd8c] sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3"
         :class="playerIndex === state.currentPlayerIndex ? 'ring-[var(--color-accent)]' : ''"
       >
         <span
-          class="h-8 w-8 shrink-0 rounded-full border-2 border-black/10"
+          class="h-6 w-6 shrink-0 rounded-full border-2 border-black/10 sm:h-8 sm:w-8"
           :style="{ backgroundColor: seatColor(playerIndex) }"
           aria-hidden="true"
         />
