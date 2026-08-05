@@ -37,7 +37,18 @@ const validFlipIndexes = computed(() => new Set(
     .filter((action): action is Extract<MemoryAction, { type: 'flip' }> => action.type === 'flip')
     .map((action) => action.cardIndex),
 ))
-const gridStyle = computed(() => ({ gridTemplateColumns: `repeat(${props.cols}, minmax(0, 1fr))` }))
+const GRID_GAP_PX = 4
+
+const gridStyle = computed(() => {
+  const gapTotalX = (props.cols - 1) * GRID_GAP_PX
+  const gapTotalY = (props.rows - 1) * GRID_GAP_PX
+  const maxCardSize = `calc((min(48vh, 72vw) - ${gapTotalY}px) / ${props.rows})`
+
+  return {
+    gridTemplateColumns: `repeat(${props.cols}, minmax(0, 1fr))`,
+    width: `min(100%, calc(${maxCardSize} * ${props.cols} + ${gapTotalX}px))`,
+  }
+})
 
 function isCardRevealed(cardIndex: number) {
   const pairId = state.value.cards[cardIndex]
@@ -100,23 +111,24 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-2xl">
+  <section class="mx-auto flex w-full max-w-md flex-col items-center">
     <TurnBanner
       v-if="currentPlayer"
+      class="w-full"
       :player-name="currentPlayer.displayName"
       :is-ai="isAiTurn"
       :hint="isAiTurn ? 'Die Karten werden gleich aufgedeckt.' : 'Finde zwei gleiche Karten.'"
     />
 
-    <div class="mt-4 grid gap-1.5 sm:mt-6 sm:gap-2" :style="gridStyle">
+    <div class="mt-3 grid gap-1" :style="gridStyle">
       <button
         v-for="(pairId, cardIndex) in state.cards"
         :key="cardIndex"
         type="button"
-        class="aspect-square rounded-xl border-2 text-xl shadow-[0_3px_0_#9e3b24] transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:text-2xl md:text-3xl"
+        class="aspect-square rounded-lg border-2 text-base leading-none shadow-[0_2px_0_#9e3b24] transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:text-lg md:text-xl"
         :class="isCardRevealed(cardIndex)
-          ? 'border-[#dfbd8c] bg-[var(--color-panel)] shadow-[0_3px_0_#c48a4a]'
-          : 'border-[#9e3b24] bg-[var(--color-accent)] text-white hover:-translate-y-0.5 hover:shadow-[0_4px_0_#9e3b24]'"
+          ? 'border-[#dfbd8c] bg-[var(--color-panel)] shadow-[0_2px_0_#c48a4a]'
+          : 'border-[#9e3b24] bg-[var(--color-accent)] text-white hover:-translate-y-0.5 hover:shadow-[0_3px_0_#9e3b24]'"
         :disabled="!validFlipIndexes.has(cardIndex) || isAiTurn"
         :aria-label="isCardRevealed(cardIndex) ? `Karte ${cardIndex + 1}: ${CARD_SYMBOLS[pairId]}` : `Karte ${cardIndex + 1} aufdecken`"
         @click="flipCard(cardIndex)"
@@ -125,11 +137,11 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <dl class="mt-4 grid gap-2 sm:mt-6 sm:grid-cols-2 sm:gap-3">
+    <dl class="mt-3 grid w-full gap-1.5 sm:grid-cols-2 sm:gap-2">
       <div
         v-for="(player, playerIndex) in players"
         :key="player.seatIndex"
-        class="rounded-xl bg-[var(--color-panel)] px-3 py-2 ring-2 ring-[#dfbd8c] sm:rounded-2xl sm:px-4 sm:py-3"
+        class="rounded-lg bg-[var(--color-panel)] px-3 py-1.5 text-sm ring-2 ring-[#dfbd8c]"
         :class="playerIndex === state.currentPlayerIndex ? 'ring-[var(--color-accent)]' : ''"
       >
         <dt class="font-bold">{{ player.displayName }}</dt>
