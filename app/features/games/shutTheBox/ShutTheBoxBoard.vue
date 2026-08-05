@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
+import { useSessionStore } from '~/stores/session'
 import { chooseShutTheBoxAction } from './ai'
 import {
   createShutTheBoxGame,
@@ -22,6 +23,8 @@ const TILE_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 const game = createShutTheBoxGame({ playerCount: props.players.length })
 const { play } = useSound()
 const state = ref<ShutTheBoxGameState>(game.getState())
+const session = useSessionStore()
+const aiDifficulty = computed(() => session.aiDifficulty)
 const selectedNumbers = ref<number[]>([])
 let aiTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -98,7 +101,7 @@ function scheduleAiAction() {
 
   aiTimer = setTimeout(() => {
     aiTimer = undefined
-    const action = chooseShutTheBoxAction(state.value, game.getValidActions())
+    const action = chooseShutTheBoxAction(state.value, game.getValidActions(), { difficulty: aiDifficulty.value })
     if (action) applyAction(action)
   }, AI_ACTION_DELAY_MS)
 }

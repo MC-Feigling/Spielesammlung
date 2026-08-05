@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
+import { useSessionStore } from '~/stores/session'
 import { chooseKniffelAction } from './ai'
 import { createKniffelGame, type KniffelAction, type KniffelGameState } from './engine'
 import {
@@ -26,6 +27,8 @@ const AI_ACTION_DELAY_MS = 650
 const game = createKniffelGame({ playerCount: props.players.length })
 const { play } = useSound()
 const state = ref<KniffelGameState>(game.getState())
+const session = useSessionStore()
+const aiDifficulty = computed(() => session.aiDifficulty)
 let aiTimer: ReturnType<typeof setTimeout> | undefined
 
 const currentPlayer = computed(() => props.players[state.value.currentPlayerIndex])
@@ -102,7 +105,7 @@ function scheduleAiAction() {
 
   aiTimer = setTimeout(() => {
     aiTimer = undefined
-    const action = chooseKniffelAction(state.value)
+    const action = chooseKniffelAction(state.value, { difficulty: aiDifficulty.value })
     if (action) applyAction(action)
   }, AI_ACTION_DELAY_MS)
 }

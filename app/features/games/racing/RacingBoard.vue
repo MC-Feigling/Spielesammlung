@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { SessionPlayer } from '~/types/game'
+import { useSessionStore } from '~/stores/session'
 import {
   BASE_SPEED,
   TRACK_LENGTH,
@@ -23,6 +24,9 @@ const emit = defineEmits<{
 const { play } = useSound()
 
 const CAR_COLORS = ['#e45b3a', '#f0b429', '#3d8fd1', '#4faf6a'] as const
+
+const session = useSessionStore()
+const aiDifficulty = computed(() => session.aiDifficulty)
 
 const game = createRacingGame({
   players: props.players.map((player) => ({ seatIndex: player.seatIndex, type: player.type })),
@@ -137,7 +141,7 @@ function tickLoop(timestamp: number): void {
 
   for (const player of props.players) {
     if (player.type !== 'ai') continue
-    const delta = chooseRacingLaneDelta(game.state, player.seatIndex)
+    const delta = chooseRacingLaneDelta(game.state, player.seatIndex, { difficulty: aiDifficulty.value })
     if (delta) {
       game.setLaneIntent(player.seatIndex, delta)
     }

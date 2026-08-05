@@ -1,6 +1,7 @@
 import {
   DEFAULT_AI_DIFFICULTY,
   SHUT_THE_BOX_EASY_BLUNDER_RATE,
+  SHUT_THE_BOX_MEDIUM_BLUNDER_RATE,
   type AiDifficulty,
 } from '../shared/ai'
 import type { ShutTheBoxAction, ShutTheBoxGameState } from './engine'
@@ -74,7 +75,13 @@ export function chooseShutTheBoxAction(
   const difficulty = options.difficulty ?? DEFAULT_AI_DIFFICULTY
   const random = options.random ?? Math.random
 
-  if (difficulty === 'easy' && closeActions.length > 1 && random() < SHUT_THE_BOX_EASY_BLUNDER_RATE) {
+  const blunderRate = (
+    difficulty === 'easy' ? SHUT_THE_BOX_EASY_BLUNDER_RATE
+      : difficulty === 'medium' ? SHUT_THE_BOX_MEDIUM_BLUNDER_RATE
+        : 0
+  )
+
+  if (blunderRate > 0 && closeActions.length > 1 && random() < blunderRate) {
     const randomIndex = Math.floor(random() * closeActions.length)
     return closeActions[Math.min(randomIndex, closeActions.length - 1)]!
   }

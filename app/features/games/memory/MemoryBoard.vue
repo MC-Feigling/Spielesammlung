@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { SessionPlayer } from '~/types/game'
 import { createMemoryAi } from './ai'
 import { createMemoryGame, type MemoryAction, type MemoryGameState } from './engine'
+import { useSessionStore } from '~/stores/session'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -22,7 +23,8 @@ const game = createMemoryGame({
   rows: props.rows,
   cols: props.cols,
 })
-const ai = createMemoryAi()
+const session = useSessionStore()
+const ai = createMemoryAi({ difficulty: session.aiDifficulty })
 const { play } = useSound()
 const state = ref<MemoryGameState>(game.getState())
 let aiTimer: ReturnType<typeof setTimeout> | undefined

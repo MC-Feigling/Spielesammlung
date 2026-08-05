@@ -1,6 +1,7 @@
 import {
   DEFAULT_AI_DIFFICULTY,
   UNO_EASY_BLUNDER_RATE,
+  UNO_MEDIUM_BLUNDER_RATE,
   type AiDifficulty,
 } from '../shared/ai'
 import type { UnoAction, UnoCard, UnoColor, UnoGameState, UnoRank } from './engine'
@@ -153,7 +154,13 @@ export function chooseUnoAction(
 
   const optimal = chooseOptimalAction(state, actions)
 
-  if (difficulty === 'easy' && actions.length > 1 && random() < UNO_EASY_BLUNDER_RATE) {
+  const blunderRate = (
+    difficulty === 'easy' ? UNO_EASY_BLUNDER_RATE
+      : difficulty === 'medium' ? UNO_MEDIUM_BLUNDER_RATE
+        : 0
+  )
+
+  if (blunderRate > 0 && actions.length > 1 && random() < blunderRate) {
     return pickRandomAction(actions, random)
   }
 
