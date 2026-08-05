@@ -40,17 +40,14 @@ describe('final review UI fixes', () => {
     expect(isFullyHome({ progress: 43 })).toBe(true)
   })
 
-  it('highlights held kniffel dice without conflicting Tailwind utilities', () => {
+  it('highlights held kniffel dice via DiceDie component', () => {
     const kniffelBoard = readSource('app/features/games/kniffel/KniffelBoard.vue')
-    const dieButton = kniffelBoard.match(/v-for="\(die, dieIndex\) in state\.dice"[\s\S]*?<\/button>/)?.[0]
-    const staticClass = dieButton?.match(/(?<!:)class="([^"]*)"/)?.[1] ?? ''
-    const dynamicClass = dieButton?.match(/:class="([\s\S]*?)"\n/)?.[1] ?? ''
+    const diceDie = kniffelBoard.match(/<DiceDie[\s\S]*?v-for="\(die, dieIndex\) in state\.dice"[\s\S]*?\/>/)?.[0]
 
-    expect(dieButton).toBeDefined()
-    expect(staticClass).not.toMatch(/\bbg-white\b/)
-    expect(staticClass).not.toMatch(/\bshadow-\[0_4px_0_#c48a4a\]\b/)
-    expect(dynamicClass).toMatch(/heldDice\[dieIndex\]\s*\?[\s\S]*?bg-\[#fff3c4\]/)
-    expect(dynamicClass).toMatch(/:\s*'[^']*\bbg-white\b/)
+    expect(diceDie).toBeDefined()
+    expect(diceDie).toContain(':held="state.heldDice[dieIndex]"')
+    expect(diceDie).toContain('interactive')
+    expect(kniffelBoard).toContain('useDiceRollAnimation')
   })
 
   it('recomputes kniffel valid actions from reactive state', () => {

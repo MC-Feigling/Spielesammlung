@@ -100,6 +100,7 @@ const FRAME_SEGMENTS: ReadonlyArray<{
 
 const game = createLudoGame({ playerCount: props.players.length })
 const { play } = useSound()
+const { isRolling, rollWithAnimation, isDieRolling } = useDiceRollAnimation()
 const state = ref<LudoGameState>(game.getState())
 const session = useSessionStore()
 const aiDifficulty = computed(() => session.aiDifficulty)
@@ -294,7 +295,6 @@ function applyAction(action: LudoAction) {
   const result = game.applyAction(action)
   state.value = result.state
 
-  if (action.type === 'roll') play('dice')
   if (state.value.lastEvent === 'capture') play('hit')
   if (result.winnerSeatIndexes.length > 0) {
     play('win')
@@ -302,9 +302,21 @@ function applyAction(action: LudoAction) {
   }
 }
 
-function rollDice() {
-  if (isAiTurn.value || !canRoll.value) return
-  applyAction({ type: 'roll' })
+async function performAction(action: LudoAction) {
+  if (action.type === 'roll') {
+    await rollWithAnimation({
+      indices: [0],
+      onRoll: () => applyAction(action),
+    })
+    return
+  }
+
+  applyAction(action)
+}
+
+async function rollDice() {
+  if (isAiTurn.value || !canRoll.value || isRolling.value) return
+  await performAction({ type: 'roll' })
 }
 
 function movePiece(playerIndex: number, pieceIndex: number, from: LudoMoveFrom) {
@@ -318,7 +330,7 @@ function scheduleAiAction() {
   aiTimer = setTimeout(() => {
     aiTimer = undefined
     const action = chooseLudoAction(state.value, game.getValidActions(), { difficulty: aiDifficulty.value })
-    if (action) applyAction(action)
+    if (action) void performAction(action)
   }, AI_ACTION_DELAY_MS)
 }
 
@@ -467,10 +479,15 @@ onBeforeUnmount(() => {
       <aside class="space-y-4">
         <div class="rounded-3xl bg-[var(--color-panel)] p-4 shadow-[0_4px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
           <p class="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]">Würfel</p>
-          <p class="mt-2 font-[var(--font-display)] text-4xl font-semibold" aria-live="polite">
-            {{ state.pendingRoll ?? '–' }}
-          </p>
-          <AppButton class="mt-4" block :disabled="isAiTurn || !canRoll" @click="rollDice">
+          <div class="mt-3 flex justify-center" aria-live="polite">
+            <DiceDie
+              :value="state.pendingRoll"
+              :is-rolling="isDieRolling(0)"
+              :placeholder="state.pendingRoll === null && !isRolling"
+              size="sm"
+            />
+          </div>
+          <AppButton class="mt-4" block :disabled="isAiTurn || !canRoll || isRolling" @click="rollDice">
             Würfeln
           </AppButton>
           <p class="mt-3 text-sm">{{ diceHelpText }}</p>

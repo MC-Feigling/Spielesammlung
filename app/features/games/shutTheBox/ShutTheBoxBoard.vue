@@ -22,6 +22,7 @@ const TILE_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
 const game = createShutTheBoxGame({ playerCount: props.players.length })
 const { play } = useSound()
+const { isRolling, rollWithAnimation, isDieRolling } = useDiceRollAnimation()
 const state = ref<ShutTheBoxGameState>(game.getState())
 const session = useSessionStore()
 const aiDifficulty = computed(() => session.aiDifficulty)
@@ -62,7 +63,6 @@ function applyAction(action: ShutTheBoxAction) {
   state.value = result.state
   clearSelection()
 
-  if (action.type === 'roll') play('dice')
   if (action.type === 'close') play('match')
   if (result.winnerSeatIndexes.length > 0) {
     play('win')
@@ -70,9 +70,21 @@ function applyAction(action: ShutTheBoxAction) {
   }
 }
 
-function rollDice() {
-  if (isAiTurn.value || !canRoll.value || game.isTerminal()) return
-  applyAction({ type: 'roll' })
+async function performAction(action: ShutTheBoxAction) {
+  if (action.type === 'roll') {
+    await rollWithAnimation({
+      indices: [0, 1],
+      onRoll: () => applyAction(action),
+    })
+    return
+  }
+
+  applyAction(action)
+}
+
+async function rollDice() {
+  if (isAiTurn.value || !canRoll.value || game.isTerminal() || isRolling.value) return
+  await performAction({ type: 'roll' })
 }
 
 function toggleTile(number: number) {
@@ -102,7 +114,7 @@ function scheduleAiAction() {
   aiTimer = setTimeout(() => {
     aiTimer = undefined
     const action = chooseShutTheBoxAction(state.value, game.getValidActions(), { difficulty: aiDifficulty.value })
-    if (action) applyAction(action)
+    if (action) void performAction(action)
   }, AI_ACTION_DELAY_MS)
 }
 
@@ -163,23 +175,21 @@ onBeforeUnmount(() => {
               Würfel
             </p>
             <div class="mt-3 flex gap-3">
-              <span
+              <DiceDie
                 v-for="(die, dieIndex) in state.dice"
                 :key="dieIndex"
-                class="grid h-16 w-16 place-items-center rounded-2xl border-4 border-[#9e3b24] bg-white text-3xl font-black text-[#4c3424] shadow-[0_4px_0_#c48a4a]"
-              >
-                {{ die }}
-              </span>
-              <template v-if="state.dice.length === 0">
-                <span
-                  v-for="emptyIndex in 2"
-                  :key="`empty-${emptyIndex}`"
-                  class="grid h-16 w-16 place-items-center rounded-2xl border-4 border-dashed border-[#dfbd8c] bg-[#fffaf0] text-3xl font-black text-[#c8b49a]"
-                  aria-hidden="true"
-                >
-                  ?
-                </span>
-              </template>
+                :value="die"
+                :is-rolling="isDieRolling(dieIndex)"
+                size="md"
+              />
+              <DiceDie
+                v-for="emptyIndex in Math.max(0, 2 - state.dice.length)"
+                :key="`empty-${emptyIndex}`"
+                :value="null"
+                :is-rolling="isDieRolling(state.dice.length + emptyIndex - 1)"
+                placeholder
+                size="md"
+              />
             </div>
           </div>
 
@@ -195,7 +205,7 @@ onBeforeUnmount(() => {
               v-if="state.phase === 'awaitingRoll'"
               block
               class="sm:w-auto sm:min-w-48"
-              :disabled="isAiTurn || !canRoll"
+              :disabled="isAiTurn || !canRoll || isRolling"
               @click="rollDice"
             >
               Würfeln

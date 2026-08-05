@@ -26,6 +26,7 @@ const emit = defineEmits<{
 const AI_ACTION_DELAY_MS = 650
 const game = createKniffelGame({ playerCount: props.players.length })
 const { play } = useSound()
+const { isRolling, rollWithAnimation, isDieRolling } = useDiceRollAnimation()
 const state = ref<KniffelGameState>(game.getState())
 const session = useSessionStore()
 const aiDifficulty = computed(() => session.aiDifficulty)
@@ -55,25 +56,43 @@ function applyAction(action: KniffelAction) {
   const result = game.applyAction(action)
   state.value = result.state
 
-  if (action.type === 'roll') play('dice')
   if (result.winnerSeatIndexes.length > 0) {
     play('win')
     emit('complete', result.winnerSeatIndexes)
   }
 }
 
-function rollDice() {
-  if (isAiTurn.value || !canRoll.value) return
-  applyAction({ type: 'roll' })
+function getRollIndices(): number[] {
+  if (state.value.dice.length === 0) return [0, 1, 2, 3, 4]
+  return state.value.dice
+    .map((_, dieIndex) => dieIndex)
+    .filter((dieIndex) => !state.value.heldDice[dieIndex])
+}
+
+async function performAction(action: KniffelAction) {
+  if (action.type === 'roll') {
+    await rollWithAnimation({
+      indices: getRollIndices(),
+      onRoll: () => applyAction(action),
+    })
+    return
+  }
+
+  applyAction(action)
+}
+
+async function rollDice() {
+  if (isAiTurn.value || !canRoll.value || isRolling.value) return
+  await performAction({ type: 'roll' })
 }
 
 function toggleHold(dieIndex: number) {
-  if (isAiTurn.value || !canToggleHold.value) return
+  if (isAiTurn.value || !canToggleHold.value || isRolling.value) return
   applyAction({ type: 'toggleHold', dieIndex })
 }
 
 function score(category: KniffelCategory) {
-  if (isAiTurn.value || !validCategories.value.has(category)) return
+  if (isAiTurn.value || !validCategories.value.has(category) || isRolling.value) return
   applyAction({ type: 'score', category })
 }
 
@@ -106,7 +125,7 @@ function scheduleAiAction() {
   aiTimer = setTimeout(() => {
     aiTimer = undefined
     const action = chooseKniffelAction(state.value, { difficulty: aiDifficulty.value })
-    if (action) applyAction(action)
+    if (action) void performAction(action)
   }, AI_ACTION_DELAY_MS)
 }
 
@@ -136,32 +155,30 @@ onBeforeUnmount(() => {
           Wurf {{ state.rollsUsed }} von 3
         </p>
         <div class="mt-5 grid grid-cols-5 gap-2 sm:gap-3">
-          <button
+          <DiceDie
             v-for="(die, dieIndex) in state.dice"
             :key="dieIndex"
-            type="button"
-            class="aspect-square min-h-12 rounded-2xl border-4 text-2xl font-black text-[#4c3424] transition hover:-translate-y-0.5 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:text-4xl"
-            :class="state.heldDice[dieIndex]
-              ? 'border-[var(--color-accent)] bg-[#fff3c4] shadow-[0_4px_0_#d45d3a] scale-[1.03]'
-              : 'border-[#9e3b24] bg-white shadow-[0_4px_0_#c48a4a]'"
-            :disabled="isAiTurn || !canToggleHold"
-            :aria-pressed="state.heldDice[dieIndex]"
-            :aria-label="`${die} Augen${state.heldDice[dieIndex] ? ', gehalten' : ', halten'}`"
+            :value="die"
+            :is-rolling="isDieRolling(dieIndex, state.heldDice[dieIndex])"
+            :held="state.heldDice[dieIndex]"
+            size="lg"
+            interactive
+            :label="`${die} Augen${state.heldDice[dieIndex] ? ', gehalten' : ', halten'}`"
             @click="toggleHold(dieIndex)"
-          >
-            {{ die }}
-          </button>
-          <div
+          />
+          <DiceDie
             v-for="dieIndex in Math.max(0, 5 - state.dice.length)"
             :key="`empty-${dieIndex}`"
-            class="aspect-square min-h-12 rounded-2xl border-4 border-dashed border-[#dfbd8c] bg-[#fffaf0]"
-            aria-hidden="true"
+            :value="null"
+            :is-rolling="isDieRolling(dieIndex)"
+            placeholder
+            size="lg"
           />
         </div>
         <p class="mt-4 text-sm text-[var(--text-base)]">
           Würfel antippen, um sie für den nächsten Wurf zu halten.
         </p>
-        <AppButton class="mt-5" block :disabled="isAiTurn || !canRoll" @click="rollDice">
+        <AppButton class="mt-5" block :disabled="isAiTurn || !canRoll || isRolling" @click="rollDice">
           {{ state.rollsUsed === 0 ? 'Würfeln' : 'Noch einmal würfeln' }}
         </AppButton>
       </div>
