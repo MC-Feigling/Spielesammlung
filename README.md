@@ -15,6 +15,7 @@ Hot-Seat: abwechselnd am gleichen Gerät. Profile, KI-Gegner und lokale Wins.
 | UNO | 2–4 | Karten ablegen, allein gegen KI möglich |
 | Vier gewinnt | 2 | 4 in einer Reihe |
 | Shut the Box | 2–4 | Zahlen zuklappen |
+| Mühle | 2 | Drei in einer Reihe, Steine schlagen |
 
 ## Stack
 

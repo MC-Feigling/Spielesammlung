@@ -39,3 +39,9 @@ export const SHUT_THE_BOX_EASY_BLUNDER_RATE = 0.4
 
 /** Chance that medium Shut the Box AI picks a random legal close. */
 export const SHUT_THE_BOX_MEDIUM_BLUNDER_RATE = SHUT_THE_BOX_EASY_BLUNDER_RATE / 2
+
+/** Chance that easy Mühle AI picks a random legal action. */
+export const MUEHLE_EASY_BLUNDER_RATE = 0.45
+
+/** Chance that medium Mühle AI picks a random legal action. */
+export const MUEHLE_MEDIUM_BLUNDER_RATE = MUEHLE_EASY_BLUNDER_RATE / 2

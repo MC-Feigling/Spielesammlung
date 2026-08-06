@@ -1,4 +1,4 @@
-export type GameId = 'memory' | 'kniffel' | 'ludo' | 'racing' | 'uno' | 'connectFour' | 'shutTheBox'
+export type GameId = 'memory' | 'kniffel' | 'ludo' | 'racing' | 'uno' | 'connectFour' | 'shutTheBox' | 'muehle'
 export type UiScale = 'large' | 'compact'
 export type PlayerType = 'human' | 'ai'
 
