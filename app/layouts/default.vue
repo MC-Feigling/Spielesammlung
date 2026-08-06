@@ -80,6 +80,7 @@ const remainingClass = computed(() =>
     </main>
 
     <PlaytimeLockOverlay
+      v-if="!showUnlock"
       :show-countdown="showCountdown"
       :show-lock-screen="showLockScreen"
       :countdown-seconds="countdownSecondsLeft"

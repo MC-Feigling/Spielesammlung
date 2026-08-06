@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { hashPin, isValidPin, verifyPin } from '~/utils/pin'
+import { hashPin, isValidPin, normalizePin, verifyPin } from '~/utils/pin'
 
 const settings = useSettingsStore()
 
@@ -20,7 +20,7 @@ async function verify() {
   busy.value = true
   try {
     const hash = settings.parental.pinHash
-    if (!hash || !(await verifyPin(pin.value, hash))) {
+    if (!hash || !(await verifyPin(normalizePin(pin.value), hash))) {
       error.value = 'PIN ist falsch.'
       return
     }
@@ -43,17 +43,19 @@ function resetToday() {
 
 async function changePin() {
   error.value = ''
-  if (!isValidPin(newPin.value)) {
+  const nextPin = normalizePin(newPin.value)
+  const nextConfirm = normalizePin(newPinConfirm.value)
+  if (!isValidPin(nextPin)) {
     error.value = 'Neue PIN muss 4–6 Ziffern haben.'
     return
   }
-  if (newPin.value !== newPinConfirm.value) {
+  if (nextPin !== nextConfirm) {
     error.value = 'Neue PINs stimmen nicht überein.'
     return
   }
   busy.value = true
   try {
-    const hash = await hashPin(newPin.value)
+    const hash = await hashPin(nextPin)
     settings.setParentalPinHash(hash)
     newPin.value = ''
     newPinConfirm.value = ''
@@ -96,7 +98,8 @@ function onCancel() {
             inputmode="numeric"
             maxlength="6"
             type="password"
-            autocomplete="current-password"
+            autocomplete="one-time-code"
+            @keyup.enter="verify"
           >
           <p v-if="error" class="mt-3 font-bold text-[var(--color-accent)]" role="alert">{{ error }}</p>
           <div class="mt-6 grid gap-3 sm:grid-cols-2">
@@ -132,6 +135,7 @@ function onCancel() {
             type="password"
             maxlength="6"
             inputmode="numeric"
+            autocomplete="one-time-code"
           >
           <label class="mt-3 block font-bold" for="new-pin-confirm">Neue PIN bestätigen</label>
           <input
@@ -141,6 +145,7 @@ function onCancel() {
             type="password"
             maxlength="6"
             inputmode="numeric"
+            autocomplete="one-time-code"
           >
           <p v-if="error" class="mt-3 font-bold text-[var(--color-accent)]" role="alert">{{ error }}</p>
           <AppButton class="mt-3" :disabled="busy" block @click="changePin">PIN speichern</AppButton>
