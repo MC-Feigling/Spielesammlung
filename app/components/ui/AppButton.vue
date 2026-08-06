@@ -12,6 +12,7 @@ withDefaults(defineProps<{
 
 <template>
   <button
+    type="button"
     v-bind="$attrs"
     class="inline-flex min-h-[var(--hit-min)] items-center justify-center gap-2 rounded-2xl border-2 px-5 py-3 font-bold transition focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
     :class="[

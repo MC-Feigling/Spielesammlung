@@ -39,23 +39,12 @@ function load(): Settings {
 }
 
 export const useSettingsStore = defineStore('settings', () => {
-  const soundEnabled = ref(true)
-  const uiScale = ref<UiScale>('large')
-  const parental = ref<ParentalControls>({ ...DEFAULT_PARENTAL })
+  const initial = load()
+  const soundEnabled = ref(initial.soundEnabled)
+  const uiScale = ref<UiScale>(initial.uiScale)
+  const parental = ref<ParentalControls>(initial.parental)
 
   const isParentalActive = computed(() => parental.value.pinHash !== null)
-
-  function hydrate() {
-    const settings = load()
-    soundEnabled.value = settings.soundEnabled
-    uiScale.value = settings.uiScale
-    parental.value = settings.parental
-    ensureDayRollover()
-
-    if (import.meta.client) {
-      document.documentElement.dataset.uiScale = uiScale.value
-    }
-  }
 
   function persist() {
     if (!import.meta.client) return
@@ -69,16 +58,6 @@ export const useSettingsStore = defineStore('settings', () => {
     document.documentElement.dataset.uiScale = uiScale.value
   }
 
-  function setSoundEnabled(value: boolean) {
-    soundEnabled.value = value
-    persist()
-  }
-
-  function setUiScale(value: UiScale) {
-    uiScale.value = value
-    persist()
-  }
-
   function ensureDayRollover(now: Date = new Date()) {
     const today = localDayKey(now)
     if (parental.value.dayKey === today) return
@@ -90,6 +69,34 @@ export const useSettingsStore = defineStore('settings', () => {
       extraMsToday: 0,
     }
     persist()
+  }
+
+  function hydrate() {
+    const settings = load()
+    soundEnabled.value = settings.soundEnabled
+    uiScale.value = settings.uiScale
+    parental.value = settings.parental
+    ensureDayRollover()
+
+    if (import.meta.client) {
+      document.documentElement.dataset.uiScale = uiScale.value
+    }
+  }
+
+  function setSoundEnabled(value: boolean) {
+    soundEnabled.value = value
+    persist()
+  }
+
+  function setUiScale(value: UiScale) {
+    uiScale.value = value
+    persist()
+  }
+
+  // Eager client init so pinHash is available before first paint/interaction.
+  if (import.meta.client) {
+    ensureDayRollover()
+    document.documentElement.dataset.uiScale = uiScale.value
   }
 
   function setParentalPinHash(hash: string) {

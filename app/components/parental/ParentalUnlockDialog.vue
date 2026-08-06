@@ -61,7 +61,7 @@ function onCancel() {
           class="mt-2 w-full rounded-2xl border-2 border-[#dfbd8c] bg-white px-4 py-3 text-lg tracking-widest"
           inputmode="numeric"
           maxlength="6"
-          autocomplete="current-password"
+          autocomplete="one-time-code"
           type="password"
         >
 

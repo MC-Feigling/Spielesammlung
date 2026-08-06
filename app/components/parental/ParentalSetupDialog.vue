@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { hashPin, isValidPin } from '~/utils/pin'
+import { hashPin, isValidPin, normalizePin } from '~/utils/pin'
 
 const settings = useSettingsStore()
 
@@ -14,18 +14,20 @@ const emit = defineEmits<{
 
 async function submit() {
   error.value = ''
-  if (!isValidPin(pin.value)) {
+  const nextPin = normalizePin(pin.value)
+  const nextConfirm = normalizePin(confirmPin.value)
+  if (!isValidPin(nextPin)) {
     error.value = 'PIN muss 4–6 Ziffern haben.'
     return
   }
-  if (pin.value !== confirmPin.value) {
+  if (nextPin !== nextConfirm) {
     error.value = 'PINs stimmen nicht überein.'
     return
   }
 
   saving.value = true
   try {
-    const hash = await hashPin(pin.value)
+    const hash = await hashPin(nextPin)
     settings.setParentalPinHash(hash)
     emit('close')
   } catch {
@@ -67,7 +69,7 @@ function onCancel() {
           class="mt-2 w-full rounded-2xl border-2 border-[#dfbd8c] bg-white px-4 py-3 text-lg tracking-widest"
           inputmode="numeric"
           maxlength="6"
-          autocomplete="new-password"
+          autocomplete="one-time-code"
           type="password"
         >
 
@@ -78,7 +80,7 @@ function onCancel() {
           class="mt-2 w-full rounded-2xl border-2 border-[#dfbd8c] bg-white px-4 py-3 text-lg tracking-widest"
           inputmode="numeric"
           maxlength="6"
-          autocomplete="new-password"
+          autocomplete="one-time-code"
           type="password"
         >
 
