@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { GAMES, isGameId } from '~/constants/games'
 import { isConnectFourRosterValid } from '~/features/games/connectFour/lobby'
+import { isMuehleRosterValid } from '~/features/games/muehle/lobby'
 import { isRacingRosterValid } from '~/features/games/racing/lobby'
 import { isUnoRosterValid } from '~/features/games/uno/lobby'
 import type { AiDifficulty } from '~/features/games/shared/ai'
@@ -27,6 +28,9 @@ const canStart = computed(() => {
   if (routeGame === 'connectFour') {
     return isConnectFourRosterValid(session.players)
   }
+  if (routeGame === 'muehle') {
+    return isMuehleRosterValid(session.players)
+  }
   return true
 })
 
@@ -41,6 +45,9 @@ const lobbyHint = computed(() => {
     return 'Genau 1 Mensch und 1–3 KI.'
   }
   if (routeGame === 'connectFour' && session.canBegin && !isConnectFourRosterValid(session.players)) {
+    return 'Genau 2 Plätze besetzen.'
+  }
+  if (routeGame === 'muehle' && session.canBegin && !isMuehleRosterValid(session.players)) {
     return 'Genau 2 Plätze besetzen.'
   }
   return 'Mindestens zwei besetzte Plätze auswählen.'

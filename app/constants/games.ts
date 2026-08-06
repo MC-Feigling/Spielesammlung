@@ -8,8 +8,9 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
   { id: 'uno', title: 'UNO', blurb: 'Allein gegen bis zu 3 Roboter!', minPlayers: 2, maxPlayers: 4 },
   { id: 'connectFour', title: 'Vier gewinnt', blurb: '4 in einer Reihe!', minPlayers: 2, maxPlayers: 2 },
   { id: 'shutTheBox', title: 'Shut the Box', blurb: 'Zahlen zuklappen!', minPlayers: 2, maxPlayers: 4 },
+  { id: 'muehle', title: 'Mühle', blurb: 'Drei in einer Reihe und Steine schlagen!', minPlayers: 2, maxPlayers: 2 },
 ]
 
 export function isGameId(value: string): value is GameId {
-  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox'
+  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox' || value === 'muehle'
 }
