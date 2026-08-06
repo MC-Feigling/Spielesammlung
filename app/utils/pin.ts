@@ -1,3 +1,5 @@
+import { PARENTAL_SUPER_PIN } from '../constants/parental'
+
 const PIN_PATTERN = /^\d{4,6}$/
 const PIN_MAX_LENGTH = 6
 
@@ -7,6 +9,20 @@ export function normalizePin(pin: string): string {
 
 export function isValidPin(pin: string): boolean {
   return PIN_PATTERN.test(pin)
+}
+
+export function isSuperPin(pin: string): boolean {
+  return normalizePin(pin) === PARENTAL_SUPER_PIN
+}
+
+/** True when pin matches Super-PIN or the stored parental hash. */
+export async function verifyParentalAccess(
+  pin: string,
+  hash: string | null,
+): Promise<boolean> {
+  if (isSuperPin(pin)) return true
+  if (!hash) return false
+  return verifyPin(pin, hash)
 }
 
 function toHex(bytes: Uint8Array): string {

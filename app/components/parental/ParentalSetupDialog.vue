@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { hashPin, isValidPin, normalizePin } from '~/utils/pin'
+import { hashPin, isSuperPin, isValidPin, normalizePin } from '~/utils/pin'
 
 const settings = useSettingsStore()
 
@@ -18,6 +18,10 @@ async function submit() {
   const nextConfirm = normalizePin(confirmPin.value)
   if (!isValidPin(nextPin)) {
     error.value = 'PIN muss 4–6 Ziffern haben.'
+    return
+  }
+  if (isSuperPin(nextPin)) {
+    error.value = 'Super-PIN darf nicht als Eltern-PIN verwendet werden.'
     return
   }
   if (nextPin !== nextConfirm) {
