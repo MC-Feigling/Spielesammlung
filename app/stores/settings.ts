@@ -130,6 +130,15 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  /** Clears PIN and playtime state — Jugendschutz inactive until new PIN. */
+  function clearParentalControls() {
+    parental.value = {
+      ...DEFAULT_PARENTAL,
+      dayKey: localDayKey(),
+    }
+    persist()
+  }
+
   function addUsedMs(ms: number) {
     if (!isParentalActive.value || ms <= 0) return
     ensureDayRollover()
@@ -153,6 +162,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setDailyLimitMinutes,
     addExtraMsToday,
     resetUsedToday,
+    clearParentalControls,
     addUsedMs,
   }
 })

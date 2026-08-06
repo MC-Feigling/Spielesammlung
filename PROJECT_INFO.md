@@ -33,6 +33,14 @@ Jugendschutz: `docs/superpowers/plans/2026-08-04-jugendschutz-spielzeit.md`
 
 Memory, Kniffel (Custom-Score), Mensch ärgere dich nicht, Spurrennen, UNO, Vier gewinnt, Shut the Box, Mühle
 
+## Jugendschutz Super-PIN
+
+Wiederherstellung bei vergessener Eltern-PIN: **`314159`**
+
+- Dialoge „PIN vergessen?“ → Super-PIN → Jugendschutz zurücksetzen
+- Super-PIN gilt auch als Master-Schlüssel in Einstellungen / Extra-Zeit
+- Super-PIN darf nicht als normale Eltern-PIN gesetzt werden
+
 ## Branch
 
 Arbeit auf `dev`.

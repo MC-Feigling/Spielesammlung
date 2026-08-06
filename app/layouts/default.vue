@@ -20,6 +20,11 @@ const remainingClass = computed(() =>
     ? 'bg-[#fff1ce] text-[var(--color-accent)] ring-[var(--color-accent)]'
     : 'bg-white/70 text-[var(--color-ink)] ring-[var(--color-wood)]',
 )
+
+function onParentalRecovered() {
+  showUnlock.value = false
+  showSetup.value = true
+}
 </script>
 
 <template>
@@ -96,6 +101,7 @@ const remainingClass = computed(() =>
       v-if="showUnlock"
       @close="showUnlock = false"
       @unlock="grantExtraMinutes"
+      @recovered="onParentalRecovered"
     />
 
     <ParentalSettingsDialog

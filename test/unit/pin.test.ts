@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hashPin, isValidPin, normalizePin, verifyPin } from '../../app/utils/pin'
+import { PARENTAL_SUPER_PIN } from '../../app/constants/parental'
+import {
+  hashPin,
+  isSuperPin,
+  isValidPin,
+  normalizePin,
+  verifyParentalAccess,
+  verifyPin,
+} from '../../app/utils/pin'
 
 describe('pin utils', () => {
   afterEach(() => {
@@ -51,5 +59,23 @@ describe('pin utils', () => {
     const withoutSubtle = await hashPin('567890')
 
     expect(withoutSubtle).toBe(withSubtle)
+  })
+
+  it('recognizes the built-in super pin', () => {
+    expect(isSuperPin(PARENTAL_SUPER_PIN)).toBe(true)
+    expect(isSuperPin(` ${PARENTAL_SUPER_PIN} `)).toBe(true)
+    expect(isSuperPin('1234')).toBe(false)
+  })
+
+  it('grants parental access via super pin without stored hash', async () => {
+    expect(await verifyParentalAccess(PARENTAL_SUPER_PIN, null)).toBe(true)
+    expect(await verifyParentalAccess(PARENTAL_SUPER_PIN, 'deadbeef')).toBe(true)
+    expect(await verifyParentalAccess('1234', null)).toBe(false)
+  })
+
+  it('grants parental access via matching user pin hash', async () => {
+    const hash = await hashPin('1234')
+    expect(await verifyParentalAccess('1234', hash)).toBe(true)
+    expect(await verifyParentalAccess('9999', hash)).toBe(false)
   })
 })

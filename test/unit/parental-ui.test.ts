@@ -11,6 +11,7 @@ const PARENTAL_FILES = [
   'app/features/parental/playtime.ts',
   'app/features/parental/normalize.ts',
   'app/utils/pin.ts',
+  'app/constants/parental.ts',
 ] as const
 
 function readSource(relativePath: string): string {
@@ -29,5 +30,20 @@ describe('parental shell', () => {
     expect(layout).toContain('Jugendschutz')
     expect(layout).toContain('PlaytimeLockOverlay')
     expect(layout).toContain('usePlaytimeGuard')
+    expect(layout).toContain('onParentalRecovered')
+  })
+
+  it('exposes super-pin recovery in parental dialogs', () => {
+    const settings = readSource('app/components/parental/ParentalSettingsDialog.vue')
+    const unlock = readSource('app/components/parental/ParentalUnlockDialog.vue')
+    const parentalConst = readSource('app/constants/parental.ts')
+
+    expect(parentalConst).toContain('PARENTAL_SUPER_PIN')
+    expect(settings).toContain('PIN vergessen?')
+    expect(settings).toContain('clearParentalControls')
+    expect(settings).toContain('verifyParentalAccess')
+    expect(unlock).toContain('PIN vergessen?')
+    expect(unlock).toContain('clearParentalControls')
+    expect(unlock).toContain('recovered')
   })
 })
