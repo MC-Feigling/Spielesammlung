@@ -126,7 +126,7 @@ Hint when invalid roster but seats filled: `1–2 Menschen, Rest KI.`
 
 - Holding while racing accelerates toward `BASE_SPEED * speedMult(progress)` (gentle ramp over race, similar spirit to Spurrennen’s `SPEED_RAMP`).
 - Not holding decelerates toward a low coast speed (not instant stop), so short releases do not fully stall.
-- `jump(seat)` only in `racing`, only if `airMs === 0` and not in hard lockout; sets `airMs = JUMP_AIR_MS`.
+- `jump(seat)` only in `racing`, only if `airMs === 0` (no mid-air double jump); sets `airMs = JUMP_AIR_MS`.
 - While `airMs > 0`, horse clears hurdle collision vertically (treated as airborne).
 - Hurdle collision when not airborne and overlapping progress window: edge-triggered slowdown (`SLOWDOWN_MS`, `SLOWDOWN_FACTOR`), same edge-trigger idea as Spurrennen obstacles.
 - Hurdles spawn ahead of leader at intervals that tighten slightly with race progress; always jumpable (no stacked impossible patterns).
@@ -174,7 +174,7 @@ Unchanged: `play/[game].vue` `completeGame` records wins for human winners; play
 | --- | --- |
 | Engine | Hold accelerates; release decelerates; jump clears hurdle; miss slows; finish sets winner; countdown gates input |
 | AI | Jump when hurdle ahead (hard); easy can skip |
-| Lobby | Allow 1 human + 1–3 AI; allow 2 humans + 0–2 AI; reject 0 humans; reject 3 humans; reject length &lt; 2 or &gt; 4 |
+| Lobby | Allow 1 human + 1–3 AI; allow 2 humans + 0–2 AI; reject 0 humans; reject 3 humans; reject length outside 2–4 |
 
 Also extend any source-sniff UI tests that assert game wiring (e.g. `final-review-ui.test.ts`) only if they enumerate games and would fail without the new id.
 
