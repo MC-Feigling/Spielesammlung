@@ -115,4 +115,19 @@ describe('final review UI fixes', () => {
     expect(unoBoard).toContain('complete')
     expect(lobbyPage).toContain('isUnoRosterValid')
   })
+
+  it('wires PuzzleRaceBoard on the play page and emits complete', () => {
+    const playPage = readSource('app/pages/play/[game].vue')
+    const puzzleBoard = readSource('app/features/games/puzzleRace/PuzzleRaceBoard.vue')
+    const games = readSource('app/constants/games.ts')
+    const lobbyPage = readSource('app/pages/lobby/[game].vue')
+
+    expect(games).toContain("id: 'puzzleRace'")
+    expect(games).toContain("value === 'puzzleRace'")
+    expect(playPage).toContain('PuzzleRaceBoard')
+    expect(playPage).toContain("routeGame === 'puzzleRace'")
+    expect(playPage).toContain('@complete="completeGame"')
+    expect(puzzleBoard).toContain('complete')
+    expect(lobbyPage).toContain('isPuzzleRaceRosterValid')
+  })
 })

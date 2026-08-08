@@ -28,6 +28,7 @@ const GAME_ICONS: Record<GameId, string> = {
   shutTheBox: '📦',
   muehle: '⚪',
   horseRacing: '🐴',
+  puzzleRace: '🧩',
 }
 </script>
 

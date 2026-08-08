@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Wiese">
+  <rect width="360" height="360" fill="#87CEEB"/>
+  <circle cx="290" cy="70" r="42" fill="#FFE566"/>
+  <rect y="200" width="360" height="160" fill="#5FAF4A"/>
+  <ellipse cx="80" cy="230" rx="50" ry="28" fill="#4E9A3C"/>
+  <ellipse cx="200" cy="250" rx="70" ry="34" fill="#6FBF55"/>
+  <rect x="150" y="140" width="22" height="70" fill="#8B5A2B"/>
+  <circle cx="161" cy="120" r="48" fill="#2F7A3A"/>
+  <circle cx="130" cy="140" r="30" fill="#3A8F45"/>
+  <circle cx="190" cy="135" r="28" fill="#3A8F45"/>
+  <circle cx="60" cy="300" r="18" fill="#E85D8A"/>
+  <circle cx="110" cy="320" r="14" fill="#F2C14E"/>
+  <circle cx="250" cy="310" r="16" fill="#7B5CFF"/>
+</svg>

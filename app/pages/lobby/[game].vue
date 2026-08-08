@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { GAMES, isGameId } from '~/constants/games'
 import { isConnectFourRosterValid } from '~/features/games/connectFour/lobby'
 import { isHorseRacingRosterValid } from '~/features/games/horseRacing/lobby'
 import { isMuehleRosterValid } from '~/features/games/muehle/lobby'
+import { isPuzzleRaceRosterValid } from '~/features/games/puzzleRace/lobby'
+import {
+  PUZZLE_IMAGES,
+  PUZZLE_UPLOAD_ACCEPT,
+  PUZZLE_UPLOAD_MAX_BYTES,
+} from '~/features/games/puzzleRace/images'
+import type { PuzzleGridSize } from '~/features/games/puzzleRace/engine'
 import { isRacingRosterValid } from '~/features/games/racing/lobby'
 import { isUnoRosterValid } from '~/features/games/uno/lobby'
 import type { AiDifficulty } from '~/features/games/shared/ai'
@@ -29,6 +36,9 @@ const canStart = computed(() => {
   if (routeGame === 'uno') {
     return isUnoRosterValid(session.players)
   }
+  if (routeGame === 'puzzleRace') {
+    return isPuzzleRaceRosterValid(session.players)
+  }
   if (routeGame === 'connectFour') {
     return isConnectFourRosterValid(session.players)
   }
@@ -49,6 +59,9 @@ const lobbyHint = computed(() => {
     return '1–2 Menschen, Rest KI.'
   }
   if (routeGame === 'uno' && session.canBegin && !isUnoRosterValid(session.players)) {
+    return 'Genau 1 Mensch und 1–3 KI.'
+  }
+  if (routeGame === 'puzzleRace' && session.canBegin && !isPuzzleRaceRosterValid(session.players)) {
     return 'Genau 1 Mensch und 1–3 KI.'
   }
   if (routeGame === 'connectFour' && session.canBegin && !isConnectFourRosterValid(session.players)) {
@@ -92,8 +105,49 @@ function setMemoryGridSize(event: Event) {
   session.setMemoryGridSize((event.target as HTMLSelectElement).value as '4x3' | '4x4')
 }
 
+function setPuzzleGridSize(event: Event) {
+  session.setPuzzleGridSize((event.target as HTMLSelectElement).value as PuzzleGridSize)
+}
+
 function setAiDifficulty(event: Event) {
   session.setAiDifficulty((event.target as HTMLSelectElement).value as AiDifficulty)
+}
+
+const uploadError = ref<string | null>(null)
+
+function onPuzzleUpload(event: Event) {
+  uploadError.value = null
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  if (!PUZZLE_UPLOAD_ACCEPT.split(',').includes(file.type)) {
+    uploadError.value = 'Nur JPG, PNG oder WebP.'
+    input.value = ''
+    return
+  }
+
+  if (file.size > PUZZLE_UPLOAD_MAX_BYTES) {
+    uploadError.value = 'Bild zu groß (max. 2 MB).'
+    input.value = ''
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (typeof reader.result === 'string') {
+      session.setPuzzleImageDataUrl(reader.result)
+    }
+  }
+  reader.onerror = () => {
+    uploadError.value = 'Bild konnte nicht geladen werden.'
+  }
+  reader.readAsDataURL(file)
+}
+
+function clearPuzzleUpload() {
+  session.setPuzzleImageDataUrl(null)
+  uploadError.value = null
 }
 
 function startGame() {
@@ -149,6 +203,63 @@ function leaveLobby() {
           <option value="4x3">Klein – 12 Karten</option>
           <option value="4x4">Groß – 16 Karten</option>
         </select>
+      </template>
+
+      <template v-if="gameId === 'puzzleRace'">
+        <label class="mt-6 block max-w-xs text-sm font-bold" for="puzzle-grid-size">
+          Wie groß soll das Puzzle sein?
+        </label>
+        <select
+          id="puzzle-grid-size"
+          class="mt-1 min-h-[var(--hit-min)] w-full max-w-xs rounded-2xl border-2 border-[#c48a4a] bg-white px-4 font-bold focus:outline-4 focus:outline-offset-2 focus:outline-[var(--color-accent)]"
+          :value="session.puzzleGridSize"
+          @change="setPuzzleGridSize"
+        >
+          <option value="3x3">Klein – 3×3</option>
+          <option value="5x5">Mittel – 5×5</option>
+          <option value="7x7">Groß – 7×7</option>
+        </select>
+
+        <p class="mt-6 text-sm font-bold">Welches Bild?</p>
+        <div
+          class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3"
+          role="radiogroup"
+          aria-label="Puzzle-Bild"
+        >
+          <button
+            v-for="image in PUZZLE_IMAGES"
+            :key="image.id"
+            type="button"
+            role="radio"
+            class="overflow-hidden rounded-2xl border-4 bg-white text-left shadow-[0_3px_0_#c48a4a] focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            :class="session.puzzleImageId === image.id && !session.puzzleImageDataUrl
+              ? 'border-[var(--color-accent)]'
+              : 'border-[#dfbd8c]'"
+            :aria-checked="session.puzzleImageId === image.id && !session.puzzleImageDataUrl"
+            @click="session.setPuzzleImageId(image.id)"
+          >
+            <img :src="image.src" :alt="image.label" class="aspect-square w-full object-cover">
+            <span class="block px-2 py-1 text-center text-sm font-bold">{{ image.label }}</span>
+          </button>
+        </div>
+
+        <label class="mt-6 block text-sm font-bold" for="puzzle-upload">
+          Oder eigenes Bild (max. 2 MB)
+        </label>
+        <input
+          id="puzzle-upload"
+          type="file"
+          class="mt-2 block w-full text-sm font-bold file:mr-3 file:min-h-[var(--hit-min)] file:rounded-2xl file:border-2 file:border-[#c48a4a] file:bg-white file:px-4 file:font-bold"
+          :accept="PUZZLE_UPLOAD_ACCEPT"
+          @change="onPuzzleUpload"
+        >
+        <p v-if="session.puzzleImageDataUrl" class="mt-2 text-sm font-bold text-[var(--color-felt)]">
+          Eigenes Bild aktiv.
+          <button type="button" class="underline" @click="clearPuzzleUpload">Zurücksetzen</button>
+        </p>
+        <p v-if="uploadError" class="mt-2 text-sm font-bold text-[var(--color-accent)]">
+          {{ uploadError }}
+        </p>
       </template>
     </div>
 

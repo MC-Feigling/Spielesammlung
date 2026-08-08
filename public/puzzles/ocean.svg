@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Meer">
+  <rect width="360" height="200" fill="#7EC8E8"/>
+  <rect y="200" width="360" height="160" fill="#2E7DB5"/>
+  <path d="M0 200 Q45 170 90 200 T180 200 T270 200 T360 200 V220 H0Z" fill="#3F92C9"/>
+  <path d="M0 240 Q60 220 120 240 T240 240 T360 240 V260 H0Z" fill="#4FA0D4"/>
+  <circle cx="80" cy="70" r="36" fill="#FFE566"/>
+  <ellipse cx="260" cy="120" rx="50" ry="18" fill="#FFFFFF" opacity="0.85"/>
+  <ellipse cx="290" cy="110" rx="28" ry="12" fill="#FFFFFF" opacity="0.8"/>
+  <path d="M40 280 70 250 100 280Z" fill="#F4A261"/>
+  <rect x="55" y="280" width="30" height="12" fill="#E76F51"/>
+  <circle cx="200" cy="290" r="10" fill="#FFD166"/>
+  <path d="M220 300 Q250 270 280 300" fill="none" stroke="#FFD166" stroke-width="8" stroke-linecap="round"/>
+</svg>

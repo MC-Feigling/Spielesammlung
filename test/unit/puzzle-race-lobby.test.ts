@@ -1,0 +1,39 @@
+import { describe, expect, it } from 'vitest'
+import { isPuzzleRaceRosterValid } from '../../app/features/games/puzzleRace/lobby'
+import type { SessionPlayer } from '../../app/types/game'
+
+function p(seatIndex: number, type: 'human' | 'ai'): SessionPlayer {
+  return {
+    seatIndex,
+    type,
+    displayName: `P${seatIndex}`,
+    avatarId: 'bear',
+  }
+}
+
+describe('puzzle race lobby roster', () => {
+  it('allows 1 human + 1 AI', () => {
+    expect(isPuzzleRaceRosterValid([p(0, 'human'), p(1, 'ai')])).toBe(true)
+  })
+
+  it('allows 1 human + 3 AI', () => {
+    expect(isPuzzleRaceRosterValid([
+      p(0, 'human'), p(1, 'ai'), p(2, 'ai'), p(3, 'ai'),
+    ])).toBe(true)
+  })
+
+  it('rejects 2 humans', () => {
+    expect(isPuzzleRaceRosterValid([p(0, 'human'), p(1, 'human')])).toBe(false)
+  })
+
+  it('rejects only AI', () => {
+    expect(isPuzzleRaceRosterValid([p(0, 'ai'), p(1, 'ai')])).toBe(false)
+  })
+
+  it('rejects length outside 2–4', () => {
+    expect(isPuzzleRaceRosterValid([p(0, 'human')])).toBe(false)
+    expect(isPuzzleRaceRosterValid([
+      p(0, 'human'), p(1, 'ai'), p(2, 'ai'), p(3, 'ai'), p(4, 'ai'),
+    ] as SessionPlayer[])).toBe(false)
+  })
+})

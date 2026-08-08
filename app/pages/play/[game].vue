@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { isGameId } from '~/constants/games'
 import { humanWinnerProfileIds } from '~/features/profiles/winning-profiles'
+import { resolvePuzzleImageUrl } from '~/features/games/puzzleRace/images'
+import type { PuzzleGridSize } from '~/features/games/puzzleRace/engine'
 
 const route = useRoute()
 const session = useSessionStore()
@@ -15,11 +17,16 @@ const players = computed(() => session.players)
 const memoryGrid = computed(() => session.memoryGridSize === '4x4'
   ? { rows: 4, cols: 4 }
   : { rows: 4, cols: 3 })
+const puzzleImageUrl = computed(() =>
+  resolvePuzzleImageUrl(session.puzzleImageId, session.puzzleImageDataUrl),
+)
+const puzzleGridSize = computed(() => session.puzzleGridSize as PuzzleGridSize)
 const gameTitle = computed(() => {
   if (routeGame === 'memory') return 'Memory'
   if (routeGame === 'kniffel') return 'Kniffel'
   if (routeGame === 'racing') return 'Spurrennen'
   if (routeGame === 'horseRacing') return 'Pferderennen'
+  if (routeGame === 'puzzleRace') return 'Puzzle-Rennen'
   if (routeGame === 'uno') return 'UNO'
   if (routeGame === 'connectFour') return 'Vier gewinnt'
   if (routeGame === 'shutTheBox') return 'Shut the Box'
@@ -86,6 +93,13 @@ function completeGame(nextWinnerSeatIndexes: number[]) {
     <HorseRacingBoard
       v-else-if="routeGame === 'horseRacing'"
       :players="players"
+      @complete="completeGame"
+    />
+    <PuzzleRaceBoard
+      v-else-if="routeGame === 'puzzleRace'"
+      :players="players"
+      :grid-size="puzzleGridSize"
+      :image-url="puzzleImageUrl"
       @complete="completeGame"
     />
     <UnoBoard
