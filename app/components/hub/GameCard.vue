@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatPlayerRange } from '~/constants/games'
 import type { GameId } from '~/types/game'
 
 interface GameCardData {
@@ -37,7 +38,7 @@ const GAME_ICONS: Record<GameId, string> = {
         {{ GAME_ICONS[game.id] }}
       </span>
       <span class="rounded-full bg-[#dceddc] px-3 py-1 text-sm font-bold text-[#27462f]">
-        {{ game.minPlayers }}–{{ game.maxPlayers }} Spieler
+        {{ formatPlayerRange(game.minPlayers, game.maxPlayers) }}
       </span>
     </div>
     <h2 class="font-[var(--font-display)] text-2xl font-semibold">{{ game.title }}</h2>

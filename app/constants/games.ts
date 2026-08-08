@@ -15,3 +15,11 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
 export function isGameId(value: string): value is GameId {
   return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox' || value === 'muehle' || value === 'horseRacing'
 }
+
+export function formatPlayerRange(minPlayers: number, maxPlayers: number): string {
+  if (minPlayers === maxPlayers) {
+    return `${minPlayers} Spieler`
+  }
+
+  return `${minPlayers}–${maxPlayers} Spieler`
+}
