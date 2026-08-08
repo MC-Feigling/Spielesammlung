@@ -26,6 +26,7 @@ const GAME_ICONS: Record<GameId, string> = {
   connectFour: '🔴',
   shutTheBox: '📦',
   muehle: '⚪',
+  horseRacing: '🐴',
 }
 </script>
 
