@@ -24,7 +24,10 @@ const emit = defineEmits<{
 
 const { play } = useSound()
 
-const HORSE_COLORS = ['#c45c26', '#2f6f8f', '#3f7d4e', '#8b3d5a'] as const
+const HORSE_COLORS = ['#a85a2a', '#2a6b8a', '#3d7a48', '#7a3d58'] as const
+const CAMERA_PAD_BEHIND = 8
+const CAMERA_PAD_AHEAD = 22
+const MIN_VIEW_SPAN = VIEW_AHEAD + VIEW_BEHIND
 
 const P1_HOLD_KEYS = new Set(['d', 'D'])
 const P1_JUMP_KEYS = new Set(['f', 'F'])
@@ -42,14 +45,26 @@ const state = ref<HorseRacingState>(cloneState())
 
 const humanPlayers = computed(() => props.players.filter((player) => player.type === 'human'))
 const countdownSeconds = computed(() => Math.ceil(state.value.countdownMs / 1000))
-const cameraProgress = computed(() => Math.max(0, ...state.value.horses.map((horse) => horse.progress)))
-const raceProgressPercent = computed(() => Math.min(100, (cameraProgress.value / TRACK_LENGTH) * 100))
+const leaderProgress = computed(() => Math.max(0, ...state.value.horses.map((horse) => horse.progress)))
+const trailerProgress = computed(() => Math.min(...state.value.horses.map((horse) => horse.progress)))
+const raceProgressPercent = computed(() => Math.min(100, (leaderProgress.value / TRACK_LENGTH) * 100))
 const isRacing = computed(() => state.value.phase === 'racing')
 const rankedHorses = computed(() =>
   [...state.value.horses].sort((a, b) => b.progress - a.progress),
 )
 
-const parallaxOffset = computed(() => (cameraProgress.value * 2.4) % 120)
+const cameraWindow = computed(() => {
+  const trailing = Number.isFinite(trailerProgress.value) ? trailerProgress.value : 0
+  const leading = Number.isFinite(leaderProgress.value) ? leaderProgress.value : 0
+  const span = Math.max(
+    MIN_VIEW_SPAN,
+    leading - trailing + CAMERA_PAD_BEHIND + CAMERA_PAD_AHEAD,
+  )
+  const origin = trailing - CAMERA_PAD_BEHIND
+  return { origin, span }
+})
+
+const parallaxOffset = computed(() => (leaderProgress.value * 2.4) % 120)
 
 let rafId: number | undefined
 let lastTimestamp = 0
@@ -57,7 +72,6 @@ let hasPlayedStart = false
 let hasEmittedComplete = false
 const previousSlowdowns = new Map<number, number>()
 const keysHeld = new Set<string>()
-const pointerHoldSeats = new Set<number>()
 
 function cloneState(): HorseRacingState {
   return {
@@ -84,7 +98,6 @@ function triggerJump(seatIndex: number): void {
 }
 
 function clearAllHolds(): void {
-  pointerHoldSeats.clear()
   for (const horse of game.state.horses) {
     game.setHold(horse.seatIndex, false)
   }
@@ -124,10 +137,10 @@ function handleKeyUp(event: KeyboardEvent): void {
   keysHeld.delete(key)
 
   const humans = humanPlayers.value
-  if (humans.length >= 1 && P1_HOLD_KEYS.has(key) && !pointerHoldSeats.has(humans[0]!.seatIndex)) {
+  if (humans.length >= 1 && P1_HOLD_KEYS.has(key)) {
     setHumanHold(humans[0]!.seatIndex, false)
   }
-  else if (humans.length >= 2 && P2_HOLD_KEYS.has(key) && !pointerHoldSeats.has(humans[1]!.seatIndex)) {
+  else if (humans.length >= 2 && P2_HOLD_KEYS.has(key)) {
     setHumanHold(humans[1]!.seatIndex, false)
   }
 }
@@ -137,38 +150,20 @@ function handleWindowBlur(): void {
   clearAllHolds()
 }
 
-function onHoldPointerDown(seatIndex: number, event: PointerEvent): void {
-  event.preventDefault()
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-  pointerHoldSeats.add(seatIndex)
-  setHumanHold(seatIndex, true)
-}
-
-function onHoldPointerUp(seatIndex: number, event: PointerEvent): void {
-  event.preventDefault()
-  pointerHoldSeats.delete(seatIndex)
-  setHumanHold(seatIndex, false)
-}
-
-function onJumpPointer(seatIndex: number, event: PointerEvent): void {
-  event.preventDefault()
-  triggerJump(seatIndex)
-}
-
 function progressToLeftPercent(progress: number): number {
-  const span = VIEW_AHEAD + VIEW_BEHIND
-  const left = ((progress - (cameraProgress.value - VIEW_BEHIND)) / span) * 100
-  return Math.min(112, Math.max(-12, left))
+  const { origin, span } = cameraWindow.value
+  const left = ((progress - origin) / span) * 100
+  return Math.min(96, Math.max(4, left))
 }
 
 function horseLaneBottom(seatIndex: number): number {
-  return 10 + (seatIndex % 4) * 7
+  return 11 + (seatIndex % 4) * 8
 }
 
 function jumpOffsetPx(airMs: number): number {
   if (airMs <= 0) return 0
   const t = 1 - Math.min(1, airMs / JUMP_AIR_MS)
-  return Math.sin(Math.PI * t) * 52
+  return Math.sin(Math.PI * t) * 56
 }
 
 function getHorsePlayer(seatIndex: number): SessionPlayer | undefined {
@@ -177,10 +172,6 @@ function getHorsePlayer(seatIndex: number): SessionPlayer | undefined {
 
 function getHorseColor(seatIndex: number): string {
   return HORSE_COLORS[seatIndex % HORSE_COLORS.length]!
-}
-
-function horseBySeat(seatIndex: number): HorseRacingHorse | undefined {
-  return state.value.horses.find((horse) => horse.seatIndex === seatIndex)
 }
 
 function isGalloping(horse: HorseRacingHorse): boolean {
@@ -270,9 +261,9 @@ onBeforeUnmount(() => {
   <div class="mx-auto flex w-full max-w-5xl flex-col gap-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#2f6f8f]">Rennbahn</p>
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#2a6b8a]">Rennbahn</p>
         <p class="font-[var(--font-display)] text-xl font-semibold text-[var(--color-ink)] sm:text-2xl">
-          Halten zum Galopp · Tippen zum Springen
+          Tastatur: Halten = Galopp · Tippen = Sprung
         </p>
       </div>
       <div class="min-w-[10rem] flex-1 sm:max-w-xs">
@@ -282,7 +273,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="h-2.5 overflow-hidden rounded-full bg-[#d7c4a3]">
           <div
-            class="h-full rounded-full bg-[#2f6f8f] transition-[width] duration-100 ease-linear"
+            class="h-full rounded-full bg-[#2a6b8a] transition-[width] duration-100 ease-linear"
             :style="{ width: `${raceProgressPercent}%` }"
           />
         </div>
@@ -303,33 +294,21 @@ onBeforeUnmount(() => {
 
     <div class="relative overflow-hidden rounded-[1.6rem] shadow-[0_16px_0_#1e3a2f]">
       <div
-        class="horse-arena relative h-[min(58vh,480px)] w-full select-none"
+        class="horse-arena relative h-[min(62vh,520px)] w-full select-none"
         role="img"
         aria-label="Pferderennen Bahn"
       >
-        <div
-          class="pointer-events-none absolute inset-x-0 top-0 h-[48%] overflow-hidden"
-          aria-hidden="true"
-        >
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-[46%] overflow-hidden" aria-hidden="true">
           <div class="absolute inset-0 sky-wash" />
-          <div
-            class="cloud cloud-a"
-            :style="{ transform: `translateX(${-parallaxOffset * 0.35}%)` }"
-          />
-          <div
-            class="cloud cloud-b"
-            :style="{ transform: `translateX(${-parallaxOffset * 0.55}%)` }"
-          />
-          <div
-            class="hills"
-            :style="{ transform: `translateX(${-parallaxOffset * 0.2}%)` }"
-          />
+          <div class="cloud cloud-a" :style="{ transform: `translateX(${-parallaxOffset * 0.35}%)` }" />
+          <div class="cloud cloud-b" :style="{ transform: `translateX(${-parallaxOffset * 0.55}%)` }" />
+          <div class="hills" :style="{ transform: `translateX(${-parallaxOffset * 0.2}%)` }" />
         </div>
 
-        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] track-body" aria-hidden="true">
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[60%] track-body" aria-hidden="true">
           <div
-            class="track-dashes absolute inset-x-0 top-[18%] h-1.5 opacity-70"
-            :style="{ backgroundPositionX: `${-cameraProgress * 8}px` }"
+            class="track-dashes absolute inset-x-0 top-[16%] h-1.5 opacity-70"
+            :style="{ backgroundPositionX: `${-leaderProgress * 8}px` }"
           />
           <div class="rail rail-top" />
           <div class="rail rail-bottom" />
@@ -341,7 +320,7 @@ onBeforeUnmount(() => {
           class="absolute z-10 -translate-x-1/2"
           :style="{
             left: `${progressToLeftPercent(hurdle.progress)}%`,
-            bottom: '16%',
+            bottom: '17%',
           }"
         >
           <div class="hurdle" aria-hidden="true">
@@ -356,7 +335,7 @@ onBeforeUnmount(() => {
           :key="`horse-${horse.seatIndex}`"
           class="absolute z-20 -translate-x-1/2"
           :class="[
-            isSlowed(horse) ? 'opacity-75' : 'opacity-100',
+            isSlowed(horse) ? 'opacity-80' : 'opacity-100',
             isGalloping(horse) ? 'is-galloping' : '',
             horse.airMs > 0 ? 'is-jumping' : '',
           ]"
@@ -366,37 +345,52 @@ onBeforeUnmount(() => {
             zIndex: 20 + horse.seatIndex,
           }"
         >
-          <div class="flex flex-col items-center gap-1">
+          <div class="flex flex-col items-center gap-0.5">
             <span
-              class="max-w-[6.5rem] truncate rounded-full px-2.5 py-0.5 text-[0.7rem] font-extrabold text-[#fff8ef] shadow-md"
+              class="max-w-[7rem] truncate rounded-full px-2.5 py-0.5 text-[0.72rem] font-extrabold text-[#fff8ef] shadow-md"
               :style="{ backgroundColor: getHorseColor(horse.seatIndex) }"
             >
               {{ getHorsePlayer(horse.seatIndex)?.displayName ?? `P${horse.seatIndex + 1}` }}
             </span>
             <svg
-              class="horse-svg h-14 w-[5.5rem] drop-shadow-[0_6px_0_rgba(30,40,20,0.25)] sm:h-16 sm:w-28"
-              viewBox="0 0 120 70"
+              class="horse-svg h-[4.6rem] w-[7.2rem] drop-shadow-[0_8px_0_rgba(30,40,20,0.22)] sm:h-[5.4rem] sm:w-[8.4rem]"
+              viewBox="0 0 160 100"
               aria-hidden="true"
             >
-              <ellipse class="dust" cx="28" cy="62" rx="16" ry="4" fill="rgba(90,70,40,0.28)" />
-              <g class="horse-body" :style="{ color: getHorseColor(horse.seatIndex) }">
+              <ellipse class="dust" cx="42" cy="90" rx="22" ry="5" fill="rgba(90,70,40,0.3)" />
+              <g class="horse-figure" :style="{ color: getHorseColor(horse.seatIndex) }">
                 <path
+                  class="tail"
                   fill="currentColor"
-                  d="M28 42c8-10 22-16 38-14 10 1 18 5 24 11 3 3 8 4 12 2l6-3c2-1 4 1 3 3l-4 7c-4 6-11 9-18 9H42c-10 0-18-5-22-12-2-3-1-7 2-8z"
+                  d="M34 48c-10 2-18 10-22 18-1 2 1 4 3 3 6-4 12-8 16-14 2-3 3-7 3-7z"
+                  opacity="0.9"
                 />
                 <path
                   fill="currentColor"
-                  d="M86 28c6-2 12-1 16 3 2 2 1 5-1 6l-8 3c-5 1-10-1-13-5-2-3-1-6 6-7z"
+                  d="M42 54c6-14 24-24 46-22 14 1 26 8 34 18 2 3 1 6-2 7l-8 2c-8 2-16 2-24 0-12-2-22 1-32 8-3 2-7 1-9-2-3-5-5-8-5-11z"
                 />
-                <circle cx="102" cy="30" r="2.2" fill="#1d1812" />
-                <path fill="#1d1812" d="M96 22c4-6 9-8 12-7 1 2-1 5-4 8l-8-1z" opacity="0.55" />
-                <g class="legs" fill="#1d1812">
-                  <rect class="leg leg-1" x="40" y="52" width="5" height="14" rx="2" />
-                  <rect class="leg leg-2" x="52" y="52" width="5" height="14" rx="2" />
-                  <rect class="leg leg-3" x="68" y="52" width="5" height="14" rx="2" />
-                  <rect class="leg leg-4" x="78" y="52" width="5" height="14" rx="2" />
+                <path
+                  fill="currentColor"
+                  d="M112 42c8-12 18-18 28-16 4 1 7 5 6 9-1 3-4 5-8 5h-8c-6 0-12 2-16 6-2 2-5 1-6-1-2-4 0-8 4-3z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M136 36c6-1 12 2 14 7 1 3-1 6-4 7l-9 2c-4 0-7-2-8-5-2-4 1-9 7-11z"
+                />
+                <circle cx="146" cy="40" r="2.4" fill="#1b1610" />
+                <path fill="#1b1610" d="M140 28c3-7 9-10 13-8 1 3-1 7-5 10l-8-2z" opacity="0.65" />
+                <path fill="#1b1610" d="M118 34c6-4 12-5 18-3-2 4-7 6-12 7-4 0-7-2-6-4z" opacity="0.45" />
+                <g class="legs" fill="#1b1610">
+                  <path class="leg leg-1" d="M58 68c1 8 0 16-1 22h5c2-7 3-14 2-22z" />
+                  <path class="leg leg-2" d="M74 70c0 7 1 14 2 20h5c0-7-2-14-3-20z" />
+                  <path class="leg leg-3" d="M98 66c1 8 2 16 1 22h5c2-7 1-14 0-22z" />
+                  <path class="leg leg-4" d="M112 68c2 7 3 14 2 20h5c1-7 0-14-2-20z" />
                 </g>
-                <path fill="currentColor" d="M34 34c-6 1-11 5-12 9 4 1 9 0 13-3 2-2 2-5-1-6z" opacity="0.85" />
+                <path
+                  fill="currentColor"
+                  d="M48 50c-5 2-8 7-7 11 4 0 9-2 12-5 2-3 1-7-5-6z"
+                  opacity="0.85"
+                />
               </g>
             </svg>
           </div>
@@ -418,56 +412,30 @@ onBeforeUnmount(() => {
               <kbd class="mx-1 rounded-md bg-white/15 px-2 py-1 font-mono">{{ controlScheme(index).jump }}</kbd>
               springen
             </p>
-            <p class="text-[#cfe0d4]">Oder die großen Buttons unten nutzen.</p>
           </div>
         </div>
       </div>
     </div>
 
     <div
-      class="grid gap-3"
-      :class="humanPlayers.length > 1 ? 'sm:grid-cols-2' : 'grid-cols-1'"
+      class="flex flex-wrap gap-3 rounded-[1.2rem] bg-[#eef3e8] px-4 py-3 text-sm font-bold text-[#243028] shadow-[0_4px_0_#c5d0bc]"
+      aria-label="Tastatursteuerung"
     >
-      <div
+      <p
         v-for="(human, index) in humanPlayers"
-        :key="`pad-${human.seatIndex}`"
-        class="control-pad rounded-[1.4rem] p-3 sm:p-4"
-        :style="{ '--pad-accent': getHorseColor(human.seatIndex) }"
+        :key="`keys-${human.seatIndex}`"
+        class="inline-flex flex-wrap items-center gap-2"
       >
-        <div class="mb-3 flex items-center justify-between gap-2">
-          <p class="truncate font-[var(--font-display)] text-lg font-semibold text-[#1f2a22]">
-            {{ human.displayName }}
-          </p>
-          <p class="shrink-0 text-xs font-bold uppercase tracking-wide text-[#5d6b62]">
-            {{ controlScheme(index).hold }} / {{ controlScheme(index).jump }}
-          </p>
-        </div>
-        <div class="grid grid-cols-[1.4fr_1fr] gap-2.5">
-          <button
-            type="button"
-            class="hold-btn"
-            :class="horseBySeat(human.seatIndex)?.hold ? 'is-active' : ''"
-            :disabled="!isRacing"
-            :aria-pressed="horseBySeat(human.seatIndex)?.hold === true"
-            @pointerdown="onHoldPointerDown(human.seatIndex, $event)"
-            @pointerup="onHoldPointerUp(human.seatIndex, $event)"
-            @pointercancel="onHoldPointerUp(human.seatIndex, $event)"
-            @lostpointercapture="onHoldPointerUp(human.seatIndex, $event)"
-          >
-            <span class="text-xs font-bold uppercase tracking-[0.16em] opacity-80">Galopp</span>
-            <span class="font-[var(--font-display)] text-2xl font-bold">Halten</span>
-          </button>
-          <button
-            type="button"
-            class="jump-btn"
-            :disabled="!isRacing"
-            @pointerdown="onJumpPointer(human.seatIndex, $event)"
-          >
-            <span class="text-xs font-bold uppercase tracking-[0.16em] opacity-80">Hürde</span>
-            <span class="font-[var(--font-display)] text-2xl font-bold">Sprung</span>
-          </button>
-        </div>
-      </div>
+        <span
+          class="inline-block h-3 w-3 rounded-full"
+          :style="{ backgroundColor: getHorseColor(human.seatIndex) }"
+        />
+        <span class="max-w-[8rem] truncate">{{ human.displayName }}</span>
+        <kbd class="rounded-md bg-white px-2 py-1 font-mono shadow-sm ring-1 ring-[#c5d0bc]">{{ controlScheme(index).hold }}</kbd>
+        <span class="font-semibold text-[#5a6b60]">halten</span>
+        <kbd class="rounded-md bg-white px-2 py-1 font-mono shadow-sm ring-1 ring-[#c5d0bc]">{{ controlScheme(index).jump }}</kbd>
+        <span class="font-semibold text-[#5a6b60]">springen</span>
+      </p>
     </div>
   </div>
 </template>
@@ -595,88 +563,57 @@ onBeforeUnmount(() => {
 
 .is-galloping .leg-1,
 .is-galloping .leg-3 {
-  transform-origin: top center;
+  transform-origin: 50% 0%;
   animation: stride-a 0.28s ease-in-out infinite;
 }
 
 .is-galloping .leg-2,
 .is-galloping .leg-4 {
-  transform-origin: top center;
+  transform-origin: 50% 0%;
   animation: stride-b 0.28s ease-in-out infinite;
 }
 
+.is-galloping .tail {
+  transform-origin: 34px 48px;
+  animation: tail-swish 0.4s ease-in-out infinite;
+}
+
 .is-jumping .legs {
-  transform: rotate(-8deg);
+  transform: rotate(-12deg);
+  transform-origin: 90px 66px;
 }
 
 .is-jumping .dust {
   opacity: 0;
 }
 
-.control-pad {
-  background: linear-gradient(160deg, #f2efe6, #e4eedc);
-  box-shadow: 0 5px 0 #c5b89a;
-  border: 2px solid color-mix(in srgb, var(--pad-accent) 35%, #c5b89a);
-}
-
-.hold-btn,
-.jump-btn {
-  display: flex;
-  min-height: 5.5rem;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  border-radius: 1.1rem;
-  border: 3px solid #2a332c;
-  color: #fff8ef;
-  touch-action: none;
-  user-select: none;
-  transition: transform 80ms ease, filter 80ms ease, box-shadow 80ms ease;
-}
-
-.hold-btn {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--pad-accent) 88%, white), var(--pad-accent));
-  box-shadow: 0 5px 0 color-mix(in srgb, var(--pad-accent) 55%, #1d1812);
-}
-
-.jump-btn {
-  background: linear-gradient(180deg, #3f8f6a, #2b6b4d);
-  box-shadow: 0 5px 0 #1d4a35;
-}
-
-.hold-btn.is-active,
-.hold-btn:active:not(:disabled),
-.jump-btn:active:not(:disabled) {
-  transform: translateY(3px);
-  box-shadow: 0 2px 0 #1d1812;
-  filter: brightness(1.05);
-}
-
-.hold-btn:disabled,
-.jump-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-  filter: grayscale(0.2);
-}
-
 @keyframes stride-a {
   0%,
   100% {
-    transform: rotate(18deg) translateY(0);
+    transform: rotate(16deg);
   }
   50% {
-    transform: rotate(-22deg) translateY(-2px);
+    transform: rotate(-24deg);
   }
 }
 
 @keyframes stride-b {
   0%,
   100% {
-    transform: rotate(-18deg) translateY(0);
+    transform: rotate(-16deg);
   }
   50% {
-    transform: rotate(22deg) translateY(-2px);
+    transform: rotate(24deg);
+  }
+}
+
+@keyframes tail-swish {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(10deg);
   }
 }
 
@@ -696,13 +633,12 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud,
-  .hills,
   .is-galloping .leg-1,
   .is-galloping .leg-2,
   .is-galloping .leg-3,
   .is-galloping .leg-4,
-  .is-galloping .dust {
+  .is-galloping .dust,
+  .is-galloping .tail {
     animation: none !important;
   }
 }

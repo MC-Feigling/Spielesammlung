@@ -12,8 +12,8 @@ Add a 2–4 player side-view horse race to the Spielesammlung. Players hold a ke
 | Drive | Hold key = accelerate toward max speed; release = decelerate |
 | Obstacles | Hurdles; jump key clears them; miss applies slowdown |
 | Players | 2–4 seats; 1–2 humans; remaining seats AI |
-| Controls P1 | Hold `D`, jump `F` (+ on-screen buttons) |
-| Controls P2 | Hold `J`, jump `K` (+ on-screen buttons) |
+| Controls P1 | Hold `D`, jump `F` (keyboard only) |
+| Controls P2 | Hold `J`, jump `K` (keyboard only) |
 | Race length | Clean-run target ≈ 2–3 minutes |
 | Architecture | New feature folder (tick engine), clone registration pattern from racing |
 | Shared turn engine | Not used (`shared/engine.ts` is turn-based) |
@@ -141,7 +141,8 @@ Hint when invalid roster but seats filled: `1–2 Menschen, Rest KI.`
 
 - Hold keys: `keydown` → `setHold(true)`, `keyup` → `setHold(false)`; also clear hold on blur/unmount.
 - Jump keys: edge on `keydown` (ignore auto-repeat via held-key set).
-- Large on-screen **Halten** / **Sprung** pads per human (pointer/touch); primary control for kids on one laptop.
+- Keyboard only (no on-screen control pads).
+- Camera always frames the full pack (trailing horse stays on screen).
 - Prevent default on control keys used for play.
 
 ### AI
@@ -157,11 +158,11 @@ Board applies AI each frame for AI seats: `setHold` + conditional `jump`.
 
 ### UI (`HorseRacingBoard.vue`)
 
-- Side-scrolling track: sky + grass gradient/pattern background (not flat single color); full-bleed race plane.
-- Horses as colored seat-based figures (CSS/SVG); vertical offset while airborne; name pill.
+- Horses as clear side-view SVG silhouettes (head, neck, body, legs, tail); vertical offset while airborne; name pill.
+- Camera frames entire pack so trailing horses stay visible.
 - Hurdles as vertical bars on the ground plane.
 - Progress bar (~2–3 min label).
-- Countdown overlay + control legend (P1 A/W, P2 ←/↑).
+- Countdown overlay + keyboard legend (P1 D/F, P2 J/K).
 - Sounds via existing `useSound` where racing already plays start/hit/win cues (reuse same play calls if available; no new audio assets required for v1).
 - On finish: `emit('complete', [winnerSeatIndex])` once.
 
