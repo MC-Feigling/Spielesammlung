@@ -12,8 +12,8 @@ Add a 2–4 player side-view horse race to the Spielesammlung. Players hold a ke
 | Drive | Hold key = accelerate toward max speed; release = decelerate |
 | Obstacles | Hurdles; jump key clears them; miss applies slowdown |
 | Players | 2–4 seats; 1–2 humans; remaining seats AI |
-| Controls P1 | Hold `A`, jump `W` |
-| Controls P2 | Hold `ArrowLeft`, jump `ArrowUp` |
+| Controls P1 | Hold `D`, jump `F` (+ on-screen buttons) |
+| Controls P2 | Hold `J`, jump `K` (+ on-screen buttons) |
 | Race length | Clean-run target ≈ 2–3 minutes |
 | Architecture | New feature folder (tick engine), clone registration pattern from racing |
 | Shared turn engine | Not used (`shared/engine.ts` is turn-based) |
@@ -136,12 +136,13 @@ Hint when invalid roster but seats filled: `1–2 Menschen, Rest KI.`
 
 | Seat | Hold | Jump |
 | --- | --- | --- |
-| First human | `A` / `a` | `W` / `w` |
-| Second human | `ArrowLeft` | `ArrowUp` |
+| First human | `D` / `d` | `F` / `f` |
+| Second human | `J` / `j` | `K` / `k` |
 
 - Hold keys: `keydown` → `setHold(true)`, `keyup` → `setHold(false)`; also clear hold on blur/unmount.
 - Jump keys: edge on `keydown` (ignore auto-repeat via held-key set).
-- Prevent default on arrow keys used for play.
+- Large on-screen **Halten** / **Sprung** pads per human (pointer/touch); primary control for kids on one laptop.
+- Prevent default on control keys used for play.
 
 ### AI
 
