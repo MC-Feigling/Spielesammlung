@@ -11,10 +11,11 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
   { id: 'muehle', title: 'Mühle', blurb: 'Drei in einer Reihe und Steine schlagen!', minPlayers: 2, maxPlayers: 2 },
   { id: 'horseRacing', title: 'Pferderennen', blurb: 'Halten, springen, zuerst ins Ziel!', minPlayers: 2, maxPlayers: 4 },
   { id: 'puzzleRace', title: 'Puzzle-Rennen', blurb: 'Wer legt das Bild zuerst?', minPlayers: 2, maxPlayers: 4 },
+  { id: 'dragonBoss', title: 'Drachenkampf', blurb: 'Treffe den Drachen, weiche aus, gewinne mit den meisten Treffern!', minPlayers: 2, maxPlayers: 2 },
 ]
 
 export function isGameId(value: string): value is GameId {
-  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox' || value === 'muehle' || value === 'horseRacing' || value === 'puzzleRace'
+  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox' || value === 'muehle' || value === 'horseRacing' || value === 'puzzleRace' || value === 'dragonBoss'
 }
 
 export function formatPlayerRange(minPlayers: number, maxPlayers: number): string {

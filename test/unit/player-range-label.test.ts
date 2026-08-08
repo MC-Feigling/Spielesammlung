@@ -13,7 +13,7 @@ describe('formatPlayerRange', () => {
   it('labels fixed two-player games without a duplicate range', () => {
     const fixedTwoPlayerGames = GAMES.filter((game) => game.minPlayers === game.maxPlayers)
 
-    expect(fixedTwoPlayerGames.map((game) => game.id)).toEqual(['connectFour', 'muehle'])
+    expect(fixedTwoPlayerGames.map((game) => game.id)).toEqual(['connectFour', 'muehle', 'dragonBoss'])
     for (const game of fixedTwoPlayerGames) {
       expect(formatPlayerRange(game.minPlayers, game.maxPlayers)).toBe('2 Spieler')
     }
