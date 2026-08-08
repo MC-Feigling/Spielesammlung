@@ -9,8 +9,9 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
   { id: 'connectFour', title: 'Vier gewinnt', blurb: '4 in einer Reihe!', minPlayers: 2, maxPlayers: 2 },
   { id: 'shutTheBox', title: 'Shut the Box', blurb: 'Zahlen zuklappen!', minPlayers: 2, maxPlayers: 4 },
   { id: 'muehle', title: 'Mühle', blurb: 'Drei in einer Reihe und Steine schlagen!', minPlayers: 2, maxPlayers: 2 },
+  { id: 'horseRacing', title: 'Pferderennen', blurb: 'Halten, springen, zuerst ins Ziel!', minPlayers: 2, maxPlayers: 4 },
 ]
 
 export function isGameId(value: string): value is GameId {
-  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox' || value === 'muehle'
+  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox' || value === 'muehle' || value === 'horseRacing'
 }
