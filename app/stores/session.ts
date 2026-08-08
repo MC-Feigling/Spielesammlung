@@ -2,10 +2,20 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { GameId, SessionPlayer } from '~/types/game'
 import { AI_DIFFICULTIES, DEFAULT_AI_DIFFICULTY, type AiDifficulty } from '../features/games/shared/ai'
+import {
+  DEFAULT_PUZZLE_GRID_SIZE,
+  PUZZLE_GRID_SIZES,
+  type PuzzleGridSize,
+} from '../features/games/puzzleRace/engine'
+import {
+  DEFAULT_PUZZLE_IMAGE_ID,
+  isKnownPuzzleImageId,
+} from '../features/games/puzzleRace/images'
 
 export type SessionSeat = SessionPlayer | null
 export type SessionPlayerInput = Omit<SessionPlayer, 'seatIndex'>
 export type MemoryGridSize = '4x3' | '4x4'
+export type { PuzzleGridSize }
 
 export const MIN_SEAT_COUNT = 2
 export const MAX_SEAT_COUNT = 4
@@ -35,11 +45,24 @@ function createSeats(count: number): SessionSeat[] {
   return Array.from({ length: count }, () => null)
 }
 
+function resetPuzzleFields(
+  puzzleGridSize: { value: PuzzleGridSize },
+  puzzleImageId: { value: string },
+  puzzleImageDataUrl: { value: string | null },
+) {
+  puzzleGridSize.value = DEFAULT_PUZZLE_GRID_SIZE
+  puzzleImageId.value = DEFAULT_PUZZLE_IMAGE_ID
+  puzzleImageDataUrl.value = null
+}
+
 export const useSessionStore = defineStore('session', () => {
   const gameId = ref<GameId | null>(null)
   const seats = ref<SessionSeat[]>(createSeats(MIN_SEAT_COUNT))
   const memoryGridSize = ref<MemoryGridSize>(DEFAULT_MEMORY_GRID_SIZE)
   const aiDifficulty = ref<AiDifficulty>(DEFAULT_AI_DIFFICULTY)
+  const puzzleGridSize = ref<PuzzleGridSize>(DEFAULT_PUZZLE_GRID_SIZE)
+  const puzzleImageId = ref<string>(DEFAULT_PUZZLE_IMAGE_ID)
+  const puzzleImageDataUrl = ref<string | null>(null)
 
   const players = computed(() => seats.value.filter(isValidSessionPlayer))
   const seatCount = computed(() => seats.value.length)
@@ -50,6 +73,7 @@ export const useSessionStore = defineStore('session', () => {
     seats.value = createSeats(MIN_SEAT_COUNT)
     memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
     aiDifficulty.value = DEFAULT_AI_DIFFICULTY
+    resetPuzzleFields(puzzleGridSize, puzzleImageId, puzzleImageDataUrl)
   }
 
   function setSeatCount(nextSeatCount: number) {
@@ -86,6 +110,31 @@ export const useSessionStore = defineStore('session', () => {
     memoryGridSize.value = nextGridSize
   }
 
+  function setPuzzleGridSize(nextGridSize: PuzzleGridSize) {
+    if (!PUZZLE_GRID_SIZES.includes(nextGridSize)) {
+      throw new Error('Ungültige Puzzle-Rastergröße')
+    }
+
+    puzzleGridSize.value = nextGridSize
+  }
+
+  function setPuzzleImageId(nextImageId: string) {
+    if (!isKnownPuzzleImageId(nextImageId)) {
+      throw new Error('Ungültiges Puzzle-Bild')
+    }
+
+    puzzleImageId.value = nextImageId
+    puzzleImageDataUrl.value = null
+  }
+
+  function setPuzzleImageDataUrl(nextDataUrl: string | null) {
+    if (nextDataUrl !== null && (typeof nextDataUrl !== 'string' || nextDataUrl.length === 0)) {
+      throw new Error('Ungültiges Puzzle-Upload')
+    }
+
+    puzzleImageDataUrl.value = nextDataUrl
+  }
+
   function setAiDifficulty(nextDifficulty: AiDifficulty) {
     if (!AI_DIFFICULTIES.includes(nextDifficulty)) {
       throw new Error('Ungültiger KI-Schwierigkeitsgrad')
@@ -106,6 +155,7 @@ export const useSessionStore = defineStore('session', () => {
     seats.value = createSeats(MIN_SEAT_COUNT)
     memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
     aiDifficulty.value = DEFAULT_AI_DIFFICULTY
+    resetPuzzleFields(puzzleGridSize, puzzleImageId, puzzleImageDataUrl)
   }
 
   return {
@@ -113,6 +163,9 @@ export const useSessionStore = defineStore('session', () => {
     seats,
     memoryGridSize,
     aiDifficulty,
+    puzzleGridSize,
+    puzzleImageId,
+    puzzleImageDataUrl,
     players,
     seatCount,
     canBegin,
@@ -120,6 +173,9 @@ export const useSessionStore = defineStore('session', () => {
     setSeatCount,
     setSeat,
     setMemoryGridSize,
+    setPuzzleGridSize,
+    setPuzzleImageId,
+    setPuzzleImageDataUrl,
     setAiDifficulty,
     beginPlay,
     endSession,

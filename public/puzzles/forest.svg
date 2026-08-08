@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Wald">
+  <rect width="360" height="360" fill="#A8D5E5"/>
+  <rect y="260" width="360" height="100" fill="#4F7A3A"/>
+  <rect x="60" y="180" width="20" height="90" fill="#6B4423"/>
+  <polygon points="70,100 20,190 120,190" fill="#2F6B3A"/>
+  <polygon points="70,130 35,200 105,200" fill="#3A8248"/>
+  <rect x="170" y="170" width="24" height="100" fill="#6B4423"/>
+  <polygon points="182,80 120,180 244,180" fill="#2A5F34"/>
+  <polygon points="182,120 140,200 224,200" fill="#378046"/>
+  <rect x="280" y="200" width="16" height="70" fill="#6B4423"/>
+  <polygon points="288,140 250,210 326,210" fill="#2F6B3A"/>
+  <circle cx="300" cy="55" r="30" fill="#FFF7D6"/>
+  <circle cx="90" cy="300" r="12" fill="#E85D8A"/>
+  <circle cx="140" cy="320" r="10" fill="#F2C14E"/>
+</svg>

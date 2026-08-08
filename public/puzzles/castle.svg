@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Burg">
+  <rect width="360" height="360" fill="#9EC9E8"/>
+  <rect y="250" width="360" height="110" fill="#6B8F4E"/>
+  <rect x="70" y="120" width="220" height="150" fill="#C9B18A"/>
+  <rect x="70" y="90" width="40" height="40" fill="#B89A72"/>
+  <rect x="130" y="90" width="40" height="40" fill="#B89A72"/>
+  <rect x="190" y="90" width="40" height="40" fill="#B89A72"/>
+  <rect x="250" y="90" width="40" height="40" fill="#B89A72"/>
+  <rect x="155" y="190" width="50" height="80" fill="#6A3E2B"/>
+  <rect x="100" y="150" width="36" height="36" fill="#4A7FA8"/>
+  <rect x="224" y="150" width="36" height="36" fill="#4A7FA8"/>
+  <polygon points="180,40 210,90 150,90" fill="#D94A3D"/>
+  <rect x="168" y="90" width="24" height="30" fill="#D94A3D"/>
+  <circle cx="300" cy="60" r="28" fill="#FFF4C2"/>
+</svg>
