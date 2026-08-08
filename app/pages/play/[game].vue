@@ -27,6 +27,7 @@ const gameTitle = computed(() => {
   if (routeGame === 'racing') return 'Spurrennen'
   if (routeGame === 'horseRacing') return 'Pferderennen'
   if (routeGame === 'puzzleRace') return 'Puzzle-Rennen'
+  if (routeGame === 'dragonBoss') return 'Drachenkampf'
   if (routeGame === 'uno') return 'UNO'
   if (routeGame === 'connectFour') return 'Vier gewinnt'
   if (routeGame === 'shutTheBox') return 'Shut the Box'
@@ -100,6 +101,11 @@ function completeGame(nextWinnerSeatIndexes: number[]) {
       :players="players"
       :grid-size="puzzleGridSize"
       :image-url="puzzleImageUrl"
+      @complete="completeGame"
+    />
+    <DragonBossBoard
+      v-else-if="routeGame === 'dragonBoss'"
+      :players="players"
       @complete="completeGame"
     />
     <UnoBoard
