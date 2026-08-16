@@ -30,6 +30,7 @@ const GAME_ICONS: Record<GameId, string> = {
   horseRacing: '🐴',
   puzzleRace: '🧩',
   dragonBoss: '🐉',
+  handyman: '🔧',
 }
 </script>
 

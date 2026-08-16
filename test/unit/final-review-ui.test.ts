@@ -145,4 +145,19 @@ describe('final review UI fixes', () => {
     expect(dragonBoard).toContain('complete')
     expect(lobbyPage).toContain('isDragonBossRosterValid')
   })
+
+  it('wires HandymanBoard on the play page and emits complete', () => {
+    const playPage = readSource('app/pages/play/[game].vue')
+    const handymanBoard = readSource('app/features/games/handyman/HandymanBoard.vue')
+    const games = readSource('app/constants/games.ts')
+    const lobbyPage = readSource('app/pages/lobby/[game].vue')
+
+    expect(games).toContain("id: 'handyman'")
+    expect(games).toContain("value === 'handyman'")
+    expect(playPage).toContain('HandymanBoard')
+    expect(playPage).toContain("routeGame === 'handyman'")
+    expect(playPage).toContain('@complete="completeGame"')
+    expect(handymanBoard).toContain('complete')
+    expect(lobbyPage).toContain('isHandymanRosterValid')
+  })
 })

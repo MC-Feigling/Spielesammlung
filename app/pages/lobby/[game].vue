@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { GAMES, isGameId } from '~/constants/games'
 import { isConnectFourRosterValid } from '~/features/games/connectFour/lobby'
 import { isDragonBossRosterValid } from '~/features/games/dragonBoss/lobby'
+import { isHandymanRosterValid } from '~/features/games/handyman/lobby'
 import { isHorseRacingRosterValid } from '~/features/games/horseRacing/lobby'
 import { isMuehleRosterValid } from '~/features/games/muehle/lobby'
 import { isPuzzleRaceRosterValid } from '~/features/games/puzzleRace/lobby'
@@ -37,6 +38,9 @@ const canStart = computed(() => {
   if (routeGame === 'dragonBoss') {
     return isDragonBossRosterValid(session.players)
   }
+  if (routeGame === 'handyman') {
+    return isHandymanRosterValid(session.players)
+  }
   if (routeGame === 'uno') {
     return isUnoRosterValid(session.players)
   }
@@ -64,6 +68,9 @@ const lobbyHint = computed(() => {
   }
   if (routeGame === 'dragonBoss' && session.canBegin && !isDragonBossRosterValid(session.players)) {
     return 'Genau 2 Plätze: 1–2 Menschen, Rest KI.'
+  }
+  if (routeGame === 'handyman' && session.canBegin && !isHandymanRosterValid(session.players)) {
+    return 'Genau 1 Mensch und 1–3 KI.'
   }
   if (routeGame === 'uno' && session.canBegin && !isUnoRosterValid(session.players)) {
     return 'Genau 1 Mensch und 1–3 KI.'
