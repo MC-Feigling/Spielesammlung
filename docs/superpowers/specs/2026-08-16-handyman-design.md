@@ -192,7 +192,7 @@ Blunder = pick a random **incorrect** option when available; else pick correct.
 | medium | 0.20 |
 | hard | 0.05 |
 
-Board drives AI: when current seat is AI and phase is `pickTool` / `pickPart`, wait ~600–900 ms then call chooser; on `feedback`, wait ~700 ms then `acknowledgeFeedback`. Human feedback uses a “Weiter”-button (and optional auto-advance after ~1.2 s).
+Board drives AI: when current seat is AI and phase is `pickTool` / `pickPart`, wait ~600–900 ms then call chooser; on `feedback`, wait ~700 ms then `acknowledgeFeedback`. Human feedback shows a “Weiter”-button and also auto-advances after 1.2 s (whichever comes first).
 
 ## Behavior
 
