@@ -28,6 +28,7 @@ const gameTitle = computed(() => {
   if (routeGame === 'horseRacing') return 'Pferderennen'
   if (routeGame === 'puzzleRace') return 'Puzzle-Rennen'
   if (routeGame === 'dragonBoss') return 'Drachenkampf'
+  if (routeGame === 'handyman') return 'Handwerker'
   if (routeGame === 'uno') return 'UNO'
   if (routeGame === 'connectFour') return 'Vier gewinnt'
   if (routeGame === 'shutTheBox') return 'Shut the Box'
@@ -105,6 +106,11 @@ function completeGame(nextWinnerSeatIndexes: number[]) {
     />
     <DragonBossBoard
       v-else-if="routeGame === 'dragonBoss'"
+      :players="players"
+      @complete="completeGame"
+    />
+    <HandymanBoard
+      v-else-if="routeGame === 'handyman'"
       :players="players"
       @complete="completeGame"
     />
