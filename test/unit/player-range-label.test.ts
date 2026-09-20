@@ -18,4 +18,8 @@ describe('formatPlayerRange', () => {
       expect(formatPlayerRange(game.minPlayers, game.maxPlayers)).toBe('2 Spieler')
     }
   })
+
+  it('lists Handwerker first so it is visible without scrolling', () => {
+    expect(GAMES[0]?.id).toBe('handyman')
+  })
 })
