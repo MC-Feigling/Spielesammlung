@@ -23,6 +23,15 @@ describe('dice 3d animation', () => {
     expect(diceDie).toContain('prefers-reduced-motion')
   })
 
+  it('rotates 3 and 4 with the inverse of their face placements so the front matches the value', () => {
+    const diceDie = readSource('app/components/game/DiceDie.vue')
+
+    expect(diceDie).toMatch(/\.dice-face--3\s*\{[^}]*rotateX\(90deg\)/)
+    expect(diceDie).toMatch(/\.dice-face--4\s*\{[^}]*rotateX\(-90deg\)/)
+    expect(diceDie).toMatch(/3:\s*'rotateX\(-90deg\) rotateY\(0deg\)'/)
+    expect(diceDie).toMatch(/4:\s*'rotateX\(90deg\) rotateY\(0deg\)'/)
+  })
+
   it('colors held dice faces so the hold state stays visible on the 3d cube', () => {
     const diceDie = readSource('app/components/game/DiceDie.vue')
 

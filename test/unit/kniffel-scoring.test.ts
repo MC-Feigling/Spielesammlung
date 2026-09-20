@@ -30,6 +30,8 @@ describe('kniffel scoring', () => {
 
   it('scores classic German Kniffel categories', () => {
     expect(scoreCategory('ones', [1, 1, 2, 3, 4])).toBe(2)
+    expect(scoreCategory('fours', [1, 4, 2, 6, 4])).toBe(8)
+    expect(scoreCategory('threes', [1, 3, 2, 6, 3])).toBe(6)
     expect(scoreCategory('threeOfKind', [3, 3, 3, 4, 5])).toBe(18)
     expect(scoreCategory('fourOfKind', [2, 2, 2, 2, 5])).toBe(13)
     expect(scoreCategory('fullHouse', [2, 2, 3, 3, 3])).toBe(25)

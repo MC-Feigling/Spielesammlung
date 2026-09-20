@@ -13,8 +13,8 @@ const PIP_CELLS: Record<number, number[]> = {
 const FACE_ROTATIONS: Record<number, string> = {
   1: 'rotateX(0deg) rotateY(0deg)',
   2: 'rotateX(0deg) rotateY(-90deg)',
-  3: 'rotateX(90deg) rotateY(0deg)',
-  4: 'rotateX(-90deg) rotateY(0deg)',
+  3: 'rotateX(-90deg) rotateY(0deg)',
+  4: 'rotateX(90deg) rotateY(0deg)',
   5: 'rotateX(0deg) rotateY(90deg)',
   6: 'rotateX(0deg) rotateY(180deg)',
 }
