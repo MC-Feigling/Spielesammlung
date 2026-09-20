@@ -1,6 +1,7 @@
 import type { GameId } from '~/types/game'
 
 export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers: number; maxPlayers: number }> = [
+  { id: 'handyman', title: 'Handwerker', blurb: 'Aufträge erledigen — Werkzeug und Teil wählen!', minPlayers: 2, maxPlayers: 4 },
   { id: 'memory', title: 'Memory', blurb: 'Finde die Paare!', minPlayers: 2, maxPlayers: 4 },
   { id: 'kniffel', title: 'Kniffel', blurb: 'Würfle die besten Augen!', minPlayers: 2, maxPlayers: 4 },
   { id: 'ludo', title: 'Mensch ärgere dich nicht', blurb: 'Rauswerfen und ins Ziel!', minPlayers: 2, maxPlayers: 4 },
@@ -12,7 +13,6 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
   { id: 'horseRacing', title: 'Pferderennen', blurb: 'Halten, springen, zuerst ins Ziel!', minPlayers: 2, maxPlayers: 4 },
   { id: 'puzzleRace', title: 'Puzzle-Rennen', blurb: 'Wer legt das Bild zuerst?', minPlayers: 2, maxPlayers: 4 },
   { id: 'dragonBoss', title: 'Drachenkampf', blurb: 'Treffe den Drachen, weiche aus, gewinne mit den meisten Treffern!', minPlayers: 2, maxPlayers: 2 },
-  { id: 'handyman', title: 'Handwerker', blurb: 'Aufträge erledigen — Werkzeug und Teil wählen!', minPlayers: 2, maxPlayers: 4 },
 ]
 
 export function isGameId(value: string): value is GameId {
