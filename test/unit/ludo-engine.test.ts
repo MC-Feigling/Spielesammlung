@@ -88,6 +88,50 @@ describe('ludo engine', () => {
     expect(third.state.yardRollAttempts).toBe(0)
   })
 
+  it('allows up to three rolls when remaining pieces are only in the yard and finished home', () => {
+    const game = createLudoGameFromState({
+      playerCount: 2,
+      currentPlayerIndex: 0,
+      pendingRoll: null,
+      pieces: [
+        [{ progress: 43 }, { progress: 43 }, { progress: -1 }, { progress: -1 }],
+        [{ progress: -1 }, { progress: -1 }, { progress: -1 }, { progress: -1 }],
+      ],
+    })
+
+    const first = game.applyAction({ type: 'roll', forcedValue: 4 })
+    expect(first.state.currentPlayerIndex).toBe(0)
+    expect(first.state.pendingRoll).toBeNull()
+    expect(first.state.yardRollAttempts).toBe(1)
+    expect(game.getValidActions()).toEqual([{ type: 'roll' }])
+
+    const second = game.applyAction({ type: 'roll', forcedValue: 3 })
+    expect(second.state.currentPlayerIndex).toBe(0)
+    expect(second.state.yardRollAttempts).toBe(2)
+
+    const third = game.applyAction({ type: 'roll', forcedValue: 5 })
+    expect(third.state.currentPlayerIndex).toBe(1)
+    expect(third.state.yardRollAttempts).toBe(0)
+  })
+
+  it('does not grant extra yard rolls when a piece is still on the home stretch', () => {
+    const game = createLudoGameFromState({
+      playerCount: 2,
+      currentPlayerIndex: 0,
+      pendingRoll: null,
+      pieces: [
+        [{ progress: 42 }, { progress: -1 }, { progress: -1 }, { progress: -1 }],
+        [{ progress: -1 }, { progress: -1 }, { progress: -1 }, { progress: -1 }],
+      ],
+    })
+
+    const result = game.applyAction({ type: 'roll', forcedValue: 5 })
+
+    expect(result.state.currentPlayerIndex).toBe(1)
+    expect(result.state.pendingRoll).toBeNull()
+    expect(result.state.yardRollAttempts).toBe(0)
+  })
+
   it('resets yard roll attempts after entering with a six', () => {
     const game = createLudoGameFromState({
       playerCount: 2,
