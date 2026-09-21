@@ -3,6 +3,7 @@ import {
   getRingIndex,
   isInHome,
   isInYard,
+  isOffTrack,
   LUDO_HOME_END_PROGRESS,
   LUDO_PIECES_PER_PLAYER,
   LUDO_PLAYER_COUNT_MAX,
@@ -105,8 +106,8 @@ function moveFrom(piece: LudoPiece): LudoMoveFrom {
   return isInHome(piece) ? 'home' : 'ring'
 }
 
-function allPiecesInYard(state: LudoGameState, playerIndex: number): boolean {
-  return state.pieces[playerIndex].every((piece) => isInYard(piece))
+function hasNoPieceOnTrack(state: LudoGameState, playerIndex: number): boolean {
+  return state.pieces[playerIndex].every((piece) => isOffTrack(piece))
 }
 
 function getMoveActions(state: LudoGameState): Extract<LudoAction, { type: 'move' }>[] {
@@ -175,7 +176,7 @@ function createGame(initialState: LudoGameState, random: () => number): GameEngi
         return result()
       }
 
-      if (allPiecesInYard(state, rollingPlayerIndex)) {
+      if (hasNoPieceOnTrack(state, rollingPlayerIndex)) {
         const attempts = state.yardRollAttempts + 1
         if (attempts < LUDO_YARD_ROLL_ATTEMPTS_MAX) {
           state = {

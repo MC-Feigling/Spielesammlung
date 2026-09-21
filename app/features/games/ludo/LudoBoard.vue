@@ -7,6 +7,8 @@ import {
   isFullyHome,
   isInHome,
   isInYard,
+  isOffTrack,
+  assignFinishedHomeSteps,
   LUDO_HOME_LENGTH,
   LUDO_HOME_START_PROGRESS,
   LUDO_PLAYER_COLORS,
@@ -116,16 +118,16 @@ const validActions = computed(() => {
 const canRoll = computed(() => validActions.value.some((action) => action.type === 'roll'))
 const moveActions = computed(() => validActions.value.filter((action): action is Extract<LudoAction, { type: 'move' }> => action.type === 'move'))
 
-function allPiecesInYard(playerIndex: number) {
-  return state.value.pieces[playerIndex].every((piece) => isInYard(piece))
+function hasNoPieceOnTrack(playerIndex: number) {
+  return state.value.pieces[playerIndex].every((piece) => isOffTrack(piece))
 }
 
-const allCurrentPiecesInYard = computed(() => allPiecesInYard(state.value.currentPlayerIndex))
+const noCurrentPieceOnTrack = computed(() => hasNoPieceOnTrack(state.value.currentPlayerIndex))
 
 const turnHint = computed(() => {
   if (isAiTurn.value) return 'Die KI zieht…'
   if (canRoll.value) {
-    if (allCurrentPiecesInYard.value) {
+    if (noCurrentPieceOnTrack.value) {
       const attempt = state.value.yardRollAttempts + 1
       return `Keine Figur auf dem Brett: Würfelversuch ${attempt}/${LUDO_YARD_ROLL_ATTEMPTS_MAX}. Du brauchst eine 6.`
     }
@@ -138,7 +140,7 @@ const turnHint = computed(() => {
 })
 
 const diceHelpText = computed(() => {
-  if (allCurrentPiecesInYard.value) {
+  if (noCurrentPieceOnTrack.value) {
     return `Ohne Figur auf dem Brett: bis zu ${LUDO_YARD_ROLL_ATTEMPTS_MAX} Würfelversuche für eine 6.`
   }
   return 'Mit einer 6 darfst du noch einmal würfeln.'
@@ -194,9 +196,20 @@ interface PlacedPiece {
   cell: BoardCell
 }
 
-function pieceBoardCell(playerIndex: number, pieceIndex: number, progress: number): { from: LudoMoveFrom, cell: BoardCell } | null {
+function pieceBoardCell(
+  playerIndex: number,
+  pieceIndex: number,
+  progress: number,
+  finishedHomeSteps: Map<number, number>,
+): { from: LudoMoveFrom, cell: BoardCell } | null {
   if (isInYard({ progress })) {
     return { from: 'yard', cell: getYardCell(playerIndex, pieceIndex) }
+  }
+
+  if (isFullyHome({ progress })) {
+    const homeStep = finishedHomeSteps.get(pieceIndex)
+    if (homeStep === undefined) return null
+    return { from: 'home', cell: getHomeCell(playerIndex, homeStep) }
   }
 
   if (isInHome({ progress })) {
@@ -215,8 +228,10 @@ const boardPieces = computed((): BoardPieceView[] => {
   state.value.pieces.forEach((pieces, playerIndex) => {
     if (playerIndex >= props.players.length) return
 
+    const finishedHomeSteps = assignFinishedHomeSteps(pieces)
+
     pieces.forEach((piece, pieceIndex) => {
-      const mapped = pieceBoardCell(playerIndex, pieceIndex, piece.progress)
+      const mapped = pieceBoardCell(playerIndex, pieceIndex, piece.progress, finishedHomeSteps)
       if (!mapped) return
 
       placed.push({

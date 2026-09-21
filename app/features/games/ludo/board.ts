@@ -33,3 +33,41 @@ export function isInHome(piece: LudoPiece): boolean {
 export function isFullyHome(piece: LudoPiece): boolean {
   return piece.progress === LUDO_HOME_END_PROGRESS
 }
+
+/** Yard or finished home — no piece left on ring / home stretch. */
+export function isOffTrack(piece: LudoPiece): boolean {
+  return isInYard(piece) || isFullyHome(piece)
+}
+
+/**
+ * Maps finished home pieces onto free home cells (from the center back),
+ * so multiple finished tokens do not stack on the last home step.
+ */
+export function assignFinishedHomeSteps(
+  pieces: readonly LudoPiece[],
+): Map<number, number> {
+  const occupied = new Set<number>()
+  const finishedIndexes: number[] = []
+
+  pieces.forEach((piece, pieceIndex) => {
+    if (isFullyHome(piece)) {
+      finishedIndexes.push(pieceIndex)
+      return
+    }
+    if (isInHome(piece)) {
+      occupied.add(piece.progress - LUDO_HOME_START_PROGRESS)
+    }
+  })
+
+  const freeSteps: number[] = []
+  for (let step = LUDO_HOME_LENGTH - 1; step >= 0; step -= 1) {
+    if (!occupied.has(step)) freeSteps.push(step)
+  }
+
+  const assignment = new Map<number, number>()
+  finishedIndexes.forEach((pieceIndex, order) => {
+    const step = freeSteps[order]
+    if (step !== undefined) assignment.set(pieceIndex, step)
+  })
+  return assignment
+}
