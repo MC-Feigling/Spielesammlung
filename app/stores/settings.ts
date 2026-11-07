@@ -1,6 +1,7 @@
 import { STORAGE_SETTINGS } from '~/constants/storage'
 import { DEFAULT_PARENTAL, normalizeParental } from '~/features/parental/normalize'
 import { localDayKey } from '~/features/parental/playtime'
+import { safeSetItem } from '~/utils/storage'
 import type { UiScale } from '~/types/game'
 import type { ParentalControls, Settings } from '~/types/profile'
 
@@ -54,7 +55,7 @@ export const useSettingsStore = defineStore('settings', () => {
       uiScale: uiScale.value,
       parental: parental.value,
     }
-    localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(payload))
+    safeSetItem(STORAGE_SETTINGS, JSON.stringify(payload))
     document.documentElement.dataset.uiScale = uiScale.value
   }
 

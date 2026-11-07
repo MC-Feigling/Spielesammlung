@@ -108,7 +108,7 @@ describe('final review UI fixes', () => {
     const lobbyPage = readSource('app/pages/lobby/[game].vue')
 
     expect(games).toContain("id: 'uno'")
-    expect(games).toContain("value === 'uno'")
+    expect(games).toContain("id: 'uno'")
     expect(playPage).toContain('UnoBoard')
     expect(playPage).toContain("routeGame === 'uno'")
     expect(playPage).toContain('@complete="completeGame"')
@@ -123,7 +123,7 @@ describe('final review UI fixes', () => {
     const lobbyPage = readSource('app/pages/lobby/[game].vue')
 
     expect(games).toContain("id: 'puzzleRace'")
-    expect(games).toContain("value === 'puzzleRace'")
+    expect(games).toContain("id: 'puzzleRace'")
     expect(playPage).toContain('PuzzleRaceBoard')
     expect(playPage).toContain("routeGame === 'puzzleRace'")
     expect(playPage).toContain('@complete="completeGame"')
@@ -138,7 +138,7 @@ describe('final review UI fixes', () => {
     const lobbyPage = readSource('app/pages/lobby/[game].vue')
 
     expect(games).toContain("id: 'dragonBoss'")
-    expect(games).toContain("value === 'dragonBoss'")
+    expect(games).toContain("id: 'dragonBoss'")
     expect(playPage).toContain('DragonBossBoard')
     expect(playPage).toContain("routeGame === 'dragonBoss'")
     expect(playPage).toContain('@complete="completeGame"')
@@ -153,7 +153,7 @@ describe('final review UI fixes', () => {
     const lobbyPage = readSource('app/pages/lobby/[game].vue')
 
     expect(games).toContain("id: 'handyman'")
-    expect(games).toContain("value === 'handyman'")
+    expect(games).toContain("id: 'handyman'")
     expect(playPage).toContain('HandymanBoard')
     expect(playPage).toContain("routeGame === 'handyman'")
     expect(playPage).toContain('@complete="completeGame"')

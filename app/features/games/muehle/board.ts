@@ -106,7 +106,7 @@ export function countStones(
   points: ReadonlyArray<number | null>,
   seat: number,
 ): number {
-  return points.reduce((total, owner) => total + (owner === seat ? 1 : 0), 0)
+  return points.reduce<number>((total, owner) => total + (owner === seat ? 1 : 0), 0)
 }
 
 export function formsMill(

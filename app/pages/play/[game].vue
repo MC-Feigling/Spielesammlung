@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { isGameId } from '~/constants/games'
+import { gameTitle, isGameId } from '~/constants/games'
 import { humanWinnerProfileIds } from '~/features/profiles/winning-profiles'
 import { resolvePuzzleImageUrl } from '~/features/games/puzzleRace/images'
 import type { PuzzleGridSize } from '~/features/games/puzzleRace/engine'
@@ -21,20 +21,7 @@ const puzzleImageUrl = computed(() =>
   resolvePuzzleImageUrl(session.puzzleImageId, session.puzzleImageDataUrl),
 )
 const puzzleGridSize = computed(() => session.puzzleGridSize as PuzzleGridSize)
-const gameTitle = computed(() => {
-  if (routeGame === 'memory') return 'Memory'
-  if (routeGame === 'kniffel') return 'Kniffel'
-  if (routeGame === 'racing') return 'Spurrennen'
-  if (routeGame === 'horseRacing') return 'Pferderennen'
-  if (routeGame === 'puzzleRace') return 'Puzzle-Rennen'
-  if (routeGame === 'dragonBoss') return 'Drachenkampf'
-  if (routeGame === 'handyman') return 'Handwerker'
-  if (routeGame === 'uno') return 'UNO'
-  if (routeGame === 'connectFour') return 'Vier gewinnt'
-  if (routeGame === 'shutTheBox') return 'Shut the Box'
-  if (routeGame === 'muehle') return 'Mühle'
-  return 'Mensch ärgere dich nicht'
-})
+const gameTitleText = computed(() => gameTitle(activeGameId))
 const winners = computed(() => winnerSeatIndexes.value
   .map((seatIndex) => players.value[seatIndex]?.displayName)
   .filter((name): name is string => Boolean(name)))
@@ -72,7 +59,7 @@ function completeGame(nextWinnerSeatIndexes: number[]) {
     <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
       <div>
         <p class="font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">Spielrunde</p>
-        <h1 class="font-[var(--font-display)] text-4xl font-semibold">{{ gameTitle }}</h1>
+        <h1 class="font-[var(--font-display)] text-4xl font-semibold">{{ gameTitleText }}</h1>
       </div>
       <AppButton variant="ghost" @click="isQuitDialogOpen = true">Spiel beenden</AppButton>
     </header>

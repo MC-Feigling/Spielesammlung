@@ -14,6 +14,7 @@ Kinderfreundliche Browser-Spielesammlung (2–4 Spieler, ein Laptop).
 ./start.sh          # One-Click: Bun + deps + Dev-Server (+ Browser)
 bun install
 bun run dev
+bun run typecheck
 bun run test
 bun run build
 bun run preview

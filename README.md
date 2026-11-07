@@ -16,6 +16,10 @@ Hot-Seat: abwechselnd am gleichen Gerät. Profile, KI-Gegner und lokale Wins.
 | Vier gewinnt | 2 | 4 in einer Reihe |
 | Shut the Box | 2–4 | Zahlen zuklappen |
 | Mühle | 2 | Drei in einer Reihe, Steine schlagen |
+| Pferderennen | 2–4 | Halten, springen, zuerst ins Ziel |
+| Puzzle-Rennen | 2–4 | Wer legt das Bild zuerst? |
+| Drachenkampf | 2 | Drachen treffen, ausweichen |
+| Handwerker | 2–4 | Aufträge erledigen (Werkzeug und Teil wählen) |
 
 ## Stack
 
@@ -45,10 +49,16 @@ Danach `http://localhost:3000` im Browser öffnen.
 ## Prüfung und Produktion
 
 ```bash
+bun run typecheck
 bun run test
 bun run build
 bun run preview
 ```
+
+## Hinweise
+
+- Der Jugendschutz ist eine Hürde für Kinder, kein Sicherheitsfeature: Alle Daten liegen im localStorage des Browsers.
+- CI (GitHub Actions) führt Typecheck, Tests und Build bei jedem Push aus.
 
 ## Branch
 

@@ -1,7 +1,10 @@
 import { STORAGE_PROFILES } from '~/constants/storage'
+import { createId, safeSetItem } from '~/utils/storage'
 import { withWin } from '~/features/profiles/wins'
 import type { GameId } from '~/types/game'
 import type { Profile } from '~/types/profile'
+
+const PROFILE_NAME_MAX_LENGTH = 20
 
 function isValidProfile(item: unknown): item is Profile {
   if (!item || typeof item !== 'object') return false
@@ -34,8 +37,7 @@ function loadProfiles(): Profile[] {
 }
 
 function saveProfiles(profiles: Profile[]) {
-  if (!import.meta.client) return
-  localStorage.setItem(STORAGE_PROFILES, JSON.stringify(profiles))
+  safeSetItem(STORAGE_PROFILES, JSON.stringify(profiles))
 }
 
 export const useProfilesStore = defineStore('profiles', () => {
@@ -46,11 +48,11 @@ export const useProfilesStore = defineStore('profiles', () => {
   }
 
   function createProfile(input: { name: string; avatarId: string }): Profile {
-    const name = input.name.trim()
+    const name = input.name.trim().slice(0, PROFILE_NAME_MAX_LENGTH)
     if (!name) throw new Error('Name erforderlich')
 
     const profile: Profile = {
-      id: crypto.randomUUID(),
+      id: createId(),
       name,
       avatarId: input.avatarId,
       wins: {},
@@ -66,7 +68,7 @@ export const useProfilesStore = defineStore('profiles', () => {
     const nextPatch = { ...patch }
 
     if (patch.name !== undefined) {
-      const name = patch.name.trim()
+      const name = patch.name.trim().slice(0, PROFILE_NAME_MAX_LENGTH)
       if (!name) throw new Error('Name erforderlich')
       nextPatch.name = name
     }

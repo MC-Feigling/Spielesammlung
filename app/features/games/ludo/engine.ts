@@ -110,16 +110,17 @@ function allPiecesInYard(state: LudoGameState, playerIndex: number): boolean {
 }
 
 function getMoveActions(state: LudoGameState): Extract<LudoAction, { type: 'move' }>[] {
-  if (state.pendingRoll === null) return []
+  const roll = state.pendingRoll
+  if (roll === null) return []
 
   return state.pieces[state.currentPlayerIndex].flatMap((piece, pieceIndex) => {
     if (isInYard(piece)) {
-      return state.pendingRoll === MAX_DIE_VALUE
+      return roll === MAX_DIE_VALUE
         ? [{ type: 'move' as const, pieceIndex, from: 'yard' as const }]
         : []
     }
 
-    return piece.progress + state.pendingRoll <= LUDO_HOME_END_PROGRESS
+    return piece.progress + roll <= LUDO_HOME_END_PROGRESS
       ? [{ type: 'move' as const, pieceIndex, from: moveFrom(piece) }]
       : []
   })
