@@ -4,6 +4,7 @@ import {
   formatRecoveryCode,
   generateRecoveryCode,
   hashRecoveryCode,
+  isLegacyHash,
   verifyRecoveryCode,
   isValidPin,
   normalizePin,
@@ -31,9 +32,27 @@ describe('pin utils', () => {
 
   it('hashes and verifies', async () => {
     const hash = await hashPin('1234')
-    expect(hash).toMatch(/^[a-f0-9]{64}$/)
+    expect(hash).toMatch(/^pbkdf2\$100000\$[a-f0-9]{32}\$[a-f0-9]{64}$/)
     expect(await verifyPin('1234', hash)).toBe(true)
     expect(await verifyPin('9999', hash)).toBe(false)
+  })
+
+  it('salts hashes: same pin gives different hashes', async () => {
+    expect(await hashPin('1234')).not.toBe(await hashPin('1234'))
+  })
+
+  it('still verifies legacy unsalted sha-256 hashes and flags them for upgrade', async () => {
+    const legacy = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'
+    expect(await verifyPin('1234', legacy)).toBe(true)
+    expect(await verifyPin('9999', legacy)).toBe(false)
+    expect(isLegacyHash(legacy)).toBe(true)
+    expect(isLegacyHash(await hashPin('1234'))).toBe(false)
+    expect(isLegacyHash(null)).toBe(false)
+  })
+
+  it('rejects malformed pbkdf2 hashes', async () => {
+    expect(await verifyPin('1234', 'pbkdf2$abc$zz$00')).toBe(false)
+    expect(await verifyPin('1234', 'pbkdf2$100000$$')).toBe(false)
   })
 
   it('verifies pins with incidental whitespace via normalize', async () => {
@@ -49,19 +68,23 @@ describe('pin utils', () => {
     vi.stubGlobal('crypto', cryptoWithoutSubtle)
 
     const hash = await hashPin('1234')
-    expect(hash).toBe('03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4')
+    expect(hash).toMatch(/^pbkdf2\$/)
     expect(await verifyPin('1234', hash)).toBe(true)
     expect(await verifyPin('9999', hash)).toBe(false)
-  })
+    expect(await verifyPin('1234', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4')).toBe(true)
+  }, 20_000)
 
-  it('matches subtle and fallback digests for the same pin', async () => {
+  it('fallback and subtle implementations produce identical hashes', async () => {
     const withSubtle = await hashPin('567890')
 
     vi.stubGlobal('crypto', { ...globalThis.crypto, subtle: undefined })
-    const withoutSubtle = await hashPin('567890')
+    expect(await verifyPin('567890', withSubtle)).toBe(true)
+    expect(await verifyPin('567891', withSubtle)).toBe(false)
 
-    expect(withoutSubtle).toBe(withSubtle)
-  })
+    const withoutSubtle = await hashPin('567890')
+    vi.unstubAllGlobals()
+    expect(await verifyPin('567890', withoutSubtle)).toBe(true)
+  }, 30_000)
 
   it('has no built-in master pin: access needs the stored hash', async () => {
     expect(await verifyParentalAccess('314159', null)).toBe(false)

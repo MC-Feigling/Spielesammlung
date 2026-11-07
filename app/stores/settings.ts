@@ -1,6 +1,7 @@
 import { STORAGE_SETTINGS } from '~/constants/storage'
 import { DEFAULT_PARENTAL, normalizeParental } from '~/features/parental/normalize'
 import { localDayKey } from '~/features/parental/playtime'
+import { hashPin, isLegacyHash } from '~/utils/pin'
 import { safeSetItem } from '~/utils/storage'
 import type { UiScale } from '~/types/game'
 import type { ParentalControls, Settings } from '~/types/profile'
@@ -110,6 +111,17 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  /** Re-hashes a legacy unsalted PIN hash after the correct PIN was entered. */
+  async function upgradePinHashIfLegacy(pin: string) {
+    if (!isLegacyHash(parental.value.pinHash)) return
+    try {
+      parental.value = { ...parental.value, pinHash: await hashPin(pin) }
+      persist()
+    } catch {
+      // keep the legacy hash; the PIN still works
+    }
+  }
+
   function setRecoveryHash(hash: string | null) {
     if (!isParentalActive.value) return
     parental.value = { ...parental.value, recoveryHash: hash }
@@ -171,6 +183,7 @@ export const useSettingsStore = defineStore('settings', () => {
     ensureDayRollover,
     setParentalPinHash,
     setRecoveryHash,
+    upgradePinHashIfLegacy,
     setDailyLimitMinutes,
     addExtraMsToday,
     resetUsedToday,

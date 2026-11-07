@@ -25,6 +25,7 @@ async function unlock(minutes: ExtraMinutes) {
       error.value = 'PIN ist falsch.'
       return
     }
+    await settings.upgradePinHashIfLegacy(pin.value)
     emit('unlock', minutes)
   } catch {
     error.value = 'PIN-Prüfung fehlgeschlagen.'

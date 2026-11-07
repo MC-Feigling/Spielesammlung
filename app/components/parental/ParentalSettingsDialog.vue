@@ -43,6 +43,7 @@ async function verify() {
       return
     }
 
+    if (!recoveryMode.value) await settings.upgradePinHashIfLegacy(pin.value)
     unlockedViaRecovery.value = recoveryMode.value
     unlocked.value = true
     limitInput.value = settings.parental.dailyLimitMinutes

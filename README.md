@@ -57,7 +57,7 @@ bun run preview
 
 ## Hinweise
 
-- Der Jugendschutz ist eine Hürde für Kinder, kein Sicherheitsfeature: Alle Daten liegen im localStorage des Browsers.
+- Der Jugendschutz ist eine Hürde für Kinder, kein Sicherheitsfeature: Alle Daten liegen im localStorage des Browsers. PIN und Wiederherstellungscode werden gesalzen mit PBKDF2-SHA-256 (100.000 Runden) gespeichert; alte ungesalzene Hashes werden beim nächsten erfolgreichen Entsperren automatisch umgestellt.
 - CI (GitHub Actions) führt Typecheck, Tests und Build bei jedem Push aus.
 
 ## Branch
