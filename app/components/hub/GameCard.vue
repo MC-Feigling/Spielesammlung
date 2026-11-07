@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatPlayerRange } from '~/constants/games'
+import { formatPlayerRange, GAME_ICONS } from '~/constants/games'
 import type { GameId } from '~/types/game'
 
 interface GameCardData {
@@ -18,20 +18,6 @@ defineEmits<{
   select: []
 }>()
 
-const GAME_ICONS: Record<GameId, string> = {
-  memory: '🧠',
-  kniffel: '🎲',
-  ludo: '🏁',
-  racing: '🏎️',
-  uno: '🃏',
-  connectFour: '🔴',
-  shutTheBox: '📦',
-  muehle: '⚪',
-  horseRacing: '🐴',
-  puzzleRace: '🧩',
-  dragonBoss: '🐉',
-  handyman: '🔧',
-}
 </script>
 
 <template>

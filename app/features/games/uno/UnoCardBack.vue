@@ -43,7 +43,7 @@ const SIZE_CLASS: Record<'sm' | 'md' | 'lg', string> = {
           );
       "
     />
-    <div class="absolute inset-0 flex items-center justify-center">
+    <div v-if="props.size !== 'sm'" class="absolute inset-0 flex items-center justify-center">
       <span
         class="rotate-[-18deg] font-[var(--font-display)] text-[0.65rem] font-black tracking-widest text-[#f4f0e6]/90 sm:text-xs"
       >

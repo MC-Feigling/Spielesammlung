@@ -13,6 +13,7 @@ import {
   type PuzzleRaceBoardState,
   type PuzzleRaceState,
 } from './engine'
+import { plural, sortStandings, type GameStanding } from '../shared/standings'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -21,7 +22,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const { play } = useSound()
@@ -139,7 +140,10 @@ function checkWinner(): void {
   if (winnerSeat === null || hasEmittedComplete) return
   hasEmittedComplete = true
   play('win')
-  emit('complete', [winnerSeat])
+  emit('complete', [winnerSeat], sortStandings(game.state.boards.map((board) => {
+    const correct = board.tiles.filter((tile, index) => tile === index).length
+    return { seatIndex: board.seatIndex, score: correct, label: `${correct}/${board.tiles.length} Teile` }
+  })))
 }
 
 function runAiMoves(dtMs: number): void {
@@ -196,7 +200,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-[var(--color-panel)] p-4 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-[var(--color-panel)] px-4 py-2 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
       <p class="font-bold text-[var(--color-ink)]">
         <template v-if="state.phase === 'countdown'">
           Start in {{ countdownSeconds }}…
@@ -228,8 +232,11 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          class="mx-auto grid max-w-xl gap-1"
-          :style="{ gridTemplateColumns: `repeat(${gridN}, minmax(0, 1fr))` }"
+          class="mx-auto grid gap-1"
+          :style="{
+            maxWidth: 'max(16rem, min(36rem, calc(100vh - 29rem)))',
+            gridTemplateColumns: `repeat(${gridN}, minmax(0, 1fr))`,
+          }"
           role="grid"
           :aria-label="`Puzzle von ${humanPlayer.displayName}`"
         >

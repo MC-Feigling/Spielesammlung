@@ -18,7 +18,7 @@ describe('final review UI fixes', () => {
     expect(turnBanner).toContain("'Finde zwei gleiche Karten.'")
     expect(turnBanner).toContain('{{ hint }}')
     expect(memoryBoard).toContain(":hint=\"isAiTurn ? 'Die Karten werden gleich aufgedeckt.' : 'Finde zwei gleiche Karten.'\"")
-    expect(kniffelBoard).toContain(":hint=\"isAiTurn ? 'Die KI würfelt…' : 'Würfle und trage Punkte ein.'\"")
+    expect(kniffelBoard).toContain(":hint=\"isAiTurn ? 'Die KI würfelt…' : state.rollsUsed === 0 ? 'Würfle!' : 'Würfel halten oder Punkte eintragen.'\"")
     expect(ludoBoard).toContain(':hint="turnHint"')
     expect(ludoBoard).toContain('Tippe eine leuchtende Figur im Haus an')
     expect(ludoBoard).toContain('Würfelversuch')

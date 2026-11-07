@@ -30,3 +30,18 @@ export function formatPlayerRange(minPlayers: number, maxPlayers: number): strin
 
   return `${minPlayers}–${maxPlayers} Spieler`
 }
+
+export const GAME_ICONS: Record<GameId, string> = {
+  memory: '🧠',
+  kniffel: '🎲',
+  ludo: '🏁',
+  racing: '🏎️',
+  uno: '🃏',
+  connectFour: '🔴',
+  shutTheBox: '📦',
+  muehle: '⚪',
+  horseRacing: '🐴',
+  puzzleRace: '🧩',
+  dragonBoss: '🐉',
+  handyman: '🔧',
+}

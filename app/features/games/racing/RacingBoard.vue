@@ -13,13 +13,15 @@ import {
   type RacingState,
 } from './engine'
 import { chooseRacingLaneDelta } from './ai'
+import type { TouchControlButton } from '~/components/game/TouchControls.vue'
+import { plural, sortStandings, type GameStanding } from '../shared/standings'
 
 const props = defineProps<{
   players: SessionPlayer[]
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const { play } = useSound()
@@ -109,6 +111,17 @@ function handleKeyDown(event: KeyboardEvent): void {
   else if (humans.length >= 2 && key === 'ArrowRight') {
     applyLaneIntent(humans[1]!.seatIndex, 1)
   }
+}
+
+const TOUCH_BUTTONS: TouchControlButton[] = [
+  { id: 'left', label: 'Links', icon: '◀' },
+  { id: 'right', label: 'Rechts', icon: '▶' },
+]
+const TOUCH_HINTS = ['A / D', '← / →'] as const
+
+function onTouchPress(seatIndex: number, id: string): void {
+  if (state.value.phase !== 'racing') return
+  applyLaneIntent(seatIndex, id === 'left' ? -1 : 1)
 }
 
 function handleKeyUp(event: KeyboardEvent): void {
@@ -248,7 +261,11 @@ function tickLoop(timestamp: number): void {
   const winnerSeat = game.getWinnerSeatIndex()
   if (winnerSeat !== null) {
     play('win')
-    emit('complete', [winnerSeat])
+    emit('complete', [winnerSeat], sortStandings(game.state.cars.map((car) => ({
+      seatIndex: car.seatIndex,
+      score: car.progress,
+      label: car.seatIndex === winnerSeat ? 'im Ziel' : `${Math.min(99, Math.round((car.progress / TRACK_LENGTH) * 100))} % geschafft`,
+    }))))
     return
   }
 
@@ -273,7 +290,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-xl flex-col gap-4">
+  <div class="mx-auto flex w-full max-w-xl flex-col gap-3" :style="{ maxWidth: 'max(18rem, min(36rem, calc(100vh - 24.5rem)))' }">
     <div class="flex items-center justify-between gap-3 text-sm font-semibold">
       <p class="text-[var(--color-ink)]">Strecke · ca. 3 Min</p>
       <p class="tabular-nums text-[var(--text-muted)]">{{ Math.round(cameraProgress) }} / {{ TRACK_LENGTH }} m</p>
@@ -479,6 +496,17 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-if="humanPlayers.length > 0" class="flex flex-wrap justify-center gap-3" aria-label="Steuerung">
+      <TouchControls
+        v-for="(human, index) in humanPlayers.slice(0, 2)"
+        :key="`touch-${human.seatIndex}`"
+        :player-name="`${human.displayName} · ${TOUCH_HINTS[index]}`"
+        :color="getCarColor(human.seatIndex)"
+        :buttons="TOUCH_BUTTONS"
+        @press="onTouchPress(human.seatIndex, $event)"
+      />
     </div>
   </div>
 </template>

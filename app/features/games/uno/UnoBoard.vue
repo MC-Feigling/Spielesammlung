@@ -13,13 +13,14 @@ import {
 } from './engine'
 import UnoCardBack from './UnoCardBack.vue'
 import UnoCardFace from './UnoCardFace.vue'
+import { plural, sortStandings, type GameStanding } from '../shared/standings'
 
 const props = defineProps<{
   players: SessionPlayer[]
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const AI_ACTION_DELAY_MS = 700
@@ -141,7 +142,11 @@ function applyAction(action: UnoAction) {
 
   if (result.winnerSeatIndexes.length > 0) {
     play('win')
-    emit('complete', result.winnerSeatIndexes)
+    emit('complete', result.winnerSeatIndexes, sortStandings(state.value.hands.map((hand, index) => ({
+      seatIndex: index,
+      score: hand.length,
+      label: hand.length === 0 ? 'keine Karte mehr' : plural(hand.length, 'Karte übrig', 'Karten übrig'),
+    })), false))
   }
 }
 
@@ -205,6 +210,7 @@ onBeforeUnmount(() => {
     <TurnBanner
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
+      :seat-index="currentPlayer.seatIndex"
       :is-ai="isAiTurn"
       :hint="turnHint"
     />
@@ -217,21 +223,21 @@ onBeforeUnmount(() => {
       {{ stackHint }}
     </p>
 
-    <div class="mt-6 space-y-6">
+    <div class="space-y-3">
       <div class="flex flex-wrap justify-center gap-3">
         <div
           v-for="{ player, seatIndex } in opponentSeats"
           :key="player.seatIndex"
-          class="min-w-[9rem] rounded-3xl p-4 ring-2 transition"
+          class="flex min-w-[9rem] items-center gap-3 rounded-3xl px-3 py-2 ring-2 transition"
           :class="seatIndex === state.currentPlayerIndex
             ? 'bg-[#fff3c4] ring-[var(--color-accent)]'
             : 'bg-[var(--color-panel)] ring-[#dfbd8c]'"
         >
           <p class="font-bold">{{ player.displayName }}</p>
-          <p class="mt-1 text-sm text-[#7a5a3a]">
+          <p class="hidden text-sm text-[#7a5a3a]">
             {{ player.type === 'ai' ? 'KI' : 'Mitspieler' }}
           </p>
-          <div class="mt-3 flex items-end gap-1" aria-hidden="true">
+          <div class="flex items-end gap-1" aria-hidden="true">
             <div
               v-for="backIndex in Math.min(state.hands[seatIndex]?.length ?? 0, 5)"
               :key="`back-${seatIndex}-${backIndex}`"
@@ -240,13 +246,13 @@ onBeforeUnmount(() => {
               <UnoCardBack size="sm" />
             </div>
           </div>
-          <p class="mt-2 text-sm font-bold" :aria-label="`${state.hands[seatIndex]?.length ?? 0} Karten`">
+          <p class="text-sm font-bold" :aria-label="`${state.hands[seatIndex]?.length ?? 0} Karten`">
             {{ state.hands[seatIndex]?.length ?? 0 }} Karten
           </p>
         </div>
       </div>
 
-      <div class="rounded-3xl bg-[var(--color-panel)] p-5 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
+      <div class="rounded-3xl bg-[var(--color-panel)] px-5 py-3 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
         <div class="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
           <div class="flex flex-col items-center gap-2">
             <p class="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]">
@@ -257,7 +263,7 @@ onBeforeUnmount(() => {
               class="flex flex-col items-center gap-2"
               :aria-label="`Oben: ${cardAriaLabel(discardTop)}, Farbe ${COLOR_LABELS[state.currentColor]}`"
             >
-              <UnoCardFace :card="discardTop" size="lg" />
+              <UnoCardFace :card="discardTop" size="md" />
               <span
                 class="rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-[0_2px_0_#4c3424]"
                 :style="{ backgroundColor: COLOR_HEX[state.currentColor], color: state.currentColor === 'yellow' ? '#1a1a1a' : '#ffffff' }"
@@ -280,7 +286,7 @@ onBeforeUnmount(() => {
                 : 'Eine Karte ziehen'"
               @click="drawCard"
             >
-              <UnoCardBack size="lg" />
+              <UnoCardBack size="md" />
               <span
                 class="absolute inset-x-1 bottom-2 rounded-md bg-black/55 px-1 py-0.5 text-center text-[0.65rem] font-bold text-white sm:text-xs"
               >
@@ -320,14 +326,14 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="rounded-3xl bg-[var(--color-panel)] p-5 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
+      <div class="rounded-3xl bg-[var(--color-panel)] px-5 py-3 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]">
         <p class="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]">
           Deine Hand
           <span class="ml-2 normal-case tracking-normal text-[#7a5a3a]">
             ({{ players[viewedHumanSeat]?.displayName ?? 'Du' }})
           </span>
         </p>
-        <div class="mt-4 flex flex-wrap justify-center gap-2 sm:gap-3">
+        <div class="mt-2 flex flex-wrap justify-center gap-2 sm:gap-3">
           <button
             v-for="card in humanHand"
             :key="card.id"

@@ -8,13 +8,14 @@ import {
   type ShutTheBoxAction,
   type ShutTheBoxGameState,
 } from './engine'
+import { plural, sortStandings, type GameStanding } from '../shared/standings'
 
 const props = defineProps<{
   players: SessionPlayer[]
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const AI_ACTION_DELAY_MS = 650
@@ -66,7 +67,10 @@ function applyAction(action: ShutTheBoxAction) {
   if (action.type === 'close') play('match')
   if (result.winnerSeatIndexes.length > 0) {
     play('win')
-    emit('complete', result.winnerSeatIndexes)
+    emit('complete', result.winnerSeatIndexes, sortStandings(state.value.boxes.map((box, index) => {
+      const score = box.score ?? box.open.reduce((sum, isOpen, tile) => sum + (isOpen ? tile + 1 : 0), 0)
+      return { seatIndex: index, score, label: plural(score, 'Punkt', 'Punkte') }
+    }), false))
   }
 }
 
@@ -139,6 +143,7 @@ onBeforeUnmount(() => {
     <TurnBanner
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
+      :seat-index="currentPlayer.seatIndex"
       :is-ai="isAiTurn"
       :hint="turnHint"
     />

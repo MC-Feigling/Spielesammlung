@@ -190,3 +190,14 @@ describe('connect four engine', () => {
     expect(() => game.applyAction({ type: 'drop', column: 4 })).toThrow()
   })
 })
+
+describe('findWinningLine', () => {
+  it('returns the four cells of a horizontal win through the last move', async () => {
+    const { findWinningLine } = await import('../../app/features/games/connectFour/engine')
+    const cells = Array.from({ length: 7 }, () => Array.from({ length: 6 }, () => null as number | null))
+    for (const column of [1, 2, 3, 4]) cells[column]![0] = 0
+    const line = findWinningLine(cells, { column: 3, row: 0 })
+    expect(line.map((cell) => cell.column).sort()).toEqual([1, 2, 3, 4])
+    expect(findWinningLine(cells, null)).toEqual([])
+  })
+})
