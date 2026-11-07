@@ -11,6 +11,8 @@ export interface Profile {
 
 export interface ParentalControls {
   pinHash: string | null
+  /** Hash of the one-time recovery code; null if none was generated. */
+  recoveryHash: string | null
   dailyLimitMinutes: number
   usedMsToday: number
   dayKey: string

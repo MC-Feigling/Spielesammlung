@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { EXTRA_MINUTE_OPTIONS } from '~/features/parental/playtime'
-import { isSuperPin, normalizePin, verifyParentalAccess } from '~/utils/pin'
+import { verifyParentalAccess, verifyRecoveryCode } from '~/utils/pin'
 import type { ExtraMinutes } from '~/composables/usePlaytimeGuard'
 
 const settings = useSettingsStore()
@@ -33,12 +33,12 @@ async function unlock(minutes: ExtraMinutes) {
   }
 }
 
-async function recoverWithSuperPin() {
+async function recoverWithCode() {
   error.value = ''
   checking.value = true
   try {
-    if (!isSuperPin(normalizePin(pin.value))) {
-      error.value = 'Super-PIN ist falsch.'
+    if (!(await verifyRecoveryCode(pin.value, settings.parental.recoveryHash))) {
+      error.value = 'Wiederherstellungscode ist falsch.'
       return
     }
     settings.clearParentalControls()
@@ -85,7 +85,7 @@ function onCancel() {
         </h2>
         <p class="mt-3 text-[var(--text-base)]">
           <template v-if="recoveryMode">
-            Super-PIN eingeben. Jugendschutz wird zurückgesetzt.
+            Wiederherstellungscode (8 Ziffern) eingeben. Jugendschutz wird zurückgesetzt.
           </template>
           <template v-else>
             PIN eingeben und Extra-Zeit wählen.
@@ -93,17 +93,17 @@ function onCancel() {
         </p>
 
         <label class="mt-5 block font-bold" for="unlock-pin">
-          {{ recoveryMode ? 'Super-PIN' : 'PIN' }}
+          {{ recoveryMode ? 'Wiederherstellungscode' : 'PIN' }}
         </label>
         <input
           id="unlock-pin"
           v-model="pin"
           class="mt-2 w-full rounded-2xl border-2 border-[#dfbd8c] bg-white px-4 py-3 text-lg tracking-widest"
           inputmode="numeric"
-          maxlength="6"
+          :maxlength="recoveryMode ? 9 : 6"
           autocomplete="one-time-code"
           type="password"
-          @keyup.enter="recoveryMode ? recoverWithSuperPin() : undefined"
+          @keyup.enter="recoveryMode ? recoverWithCode() : undefined"
         >
 
         <p v-if="error" class="mt-3 font-bold text-[var(--color-accent)]" role="alert">{{ error }}</p>
@@ -111,7 +111,7 @@ function onCancel() {
         <template v-if="recoveryMode">
           <div class="mt-6 grid gap-3 sm:grid-cols-2">
             <AppButton variant="ghost" @click="cancelRecovery">Abbrechen</AppButton>
-            <AppButton :disabled="checking" @click="recoverWithSuperPin">
+            <AppButton :disabled="checking" @click="recoverWithCode">
               Zurücksetzen
             </AppButton>
           </div>

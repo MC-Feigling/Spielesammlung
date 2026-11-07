@@ -1,5 +1,3 @@
-import { PARENTAL_SUPER_PIN } from '../constants/parental'
-
 const PIN_PATTERN = /^\d{4,6}$/
 const PIN_MAX_LENGTH = 6
 
@@ -9,20 +7,6 @@ export function normalizePin(pin: string): string {
 
 export function isValidPin(pin: string): boolean {
   return PIN_PATTERN.test(pin)
-}
-
-export function isSuperPin(pin: string): boolean {
-  return normalizePin(pin) === PARENTAL_SUPER_PIN
-}
-
-/** True when pin matches Super-PIN or the stored parental hash. */
-export async function verifyParentalAccess(
-  pin: string,
-  hash: string | null,
-): Promise<boolean> {
-  if (isSuperPin(pin)) return true
-  if (!hash) return false
-  return verifyPin(pin, hash)
 }
 
 function toHex(bytes: Uint8Array): string {
@@ -140,4 +124,58 @@ export async function verifyPin(pin: string, hash: string): Promise<boolean> {
   if (!isValidPin(normalized) || !hash) return false
   const next = await hashPin(normalized)
   return next === hash
+}
+
+/** Length of the one-time recovery code shown when parental controls are set up. */
+export const RECOVERY_CODE_LENGTH = 8
+
+export function normalizeRecoveryCode(code: string): string {
+  return code.replace(/\D/g, '').slice(0, RECOVERY_CODE_LENGTH)
+}
+
+export function isValidRecoveryCode(code: string): boolean {
+  return normalizeRecoveryCode(code).length === RECOVERY_CODE_LENGTH
+}
+
+/** Random 8-digit code (unbiased: bytes >= 250 are rejected). */
+export function generateRecoveryCode(): string {
+  let digits = ''
+  while (digits.length < RECOVERY_CODE_LENGTH) {
+    const bytes = new Uint8Array(16)
+    if (typeof globalThis.crypto?.getRandomValues === 'function') {
+      globalThis.crypto.getRandomValues(bytes)
+    } else {
+      for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256)
+    }
+    for (const byte of bytes) {
+      if (byte < 250 && digits.length < RECOVERY_CODE_LENGTH) digits += String(byte % 10)
+    }
+  }
+  return digits
+}
+
+/** "12345678" -> "1234 5678" for display. */
+export function formatRecoveryCode(code: string): string {
+  const normalized = normalizeRecoveryCode(code)
+  return `${normalized.slice(0, 4)} ${normalized.slice(4)}`.trim()
+}
+
+export async function hashRecoveryCode(code: string): Promise<string> {
+  const normalized = normalizeRecoveryCode(code)
+  if (!isValidRecoveryCode(normalized)) throw new Error('Invalid recovery code')
+  return sha256Hex(`recovery:${normalized}`)
+}
+
+export async function verifyRecoveryCode(code: string, hash: string | null): Promise<boolean> {
+  if (!hash || !isValidRecoveryCode(code)) return false
+  return (await hashRecoveryCode(code)) === hash
+}
+
+/** True when the entered PIN matches the stored parental PIN hash. */
+export async function verifyParentalAccess(
+  pin: string,
+  hash: string | null,
+): Promise<boolean> {
+  if (!hash) return false
+  return verifyPin(pin, hash)
 }

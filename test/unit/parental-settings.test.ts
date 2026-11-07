@@ -29,3 +29,11 @@ describe('normalizeParental', () => {
     expect(normalizeParental({ dailyLimitMinutes: 999 }).dailyLimitMinutes).toBe(240)
   })
 })
+
+describe('recoveryHash normalization', () => {
+  it('keeps recoveryHash only together with a pinHash', () => {
+    expect(normalizeParental({ pinHash: 'a', recoveryHash: 'b' }).recoveryHash).toBe('b')
+    expect(normalizeParental({ pinHash: null, recoveryHash: 'b' }).recoveryHash).toBeNull()
+    expect(normalizeParental({ pinHash: 'a' }).recoveryHash).toBeNull()
+  })
+})

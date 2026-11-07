@@ -100,9 +100,19 @@ export const useSettingsStore = defineStore('settings', () => {
     document.documentElement.dataset.uiScale = uiScale.value
   }
 
-  function setParentalPinHash(hash: string) {
-    parental.value = { ...parental.value, pinHash: hash }
+  function setParentalPinHash(hash: string, recoveryHash?: string | null) {
+    parental.value = {
+      ...parental.value,
+      pinHash: hash,
+      ...(recoveryHash !== undefined ? { recoveryHash } : {}),
+    }
     ensureDayRollover()
+    persist()
+  }
+
+  function setRecoveryHash(hash: string | null) {
+    if (!isParentalActive.value) return
+    parental.value = { ...parental.value, recoveryHash: hash }
     persist()
   }
 
@@ -160,6 +170,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setUiScale,
     ensureDayRollover,
     setParentalPinHash,
+    setRecoveryHash,
     setDailyLimitMinutes,
     addExtraMsToday,
     resetUsedToday,

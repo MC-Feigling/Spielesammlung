@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { isSuperPin, hashPin, isValidPin, normalizePin, verifyParentalAccess } from '~/utils/pin'
+import {
+  formatRecoveryCode,
+  generateRecoveryCode,
+  hashPin,
+  hashRecoveryCode,
+  isValidPin,
+  normalizePin,
+  verifyParentalAccess,
+  verifyRecoveryCode,
+} from '~/utils/pin'
 
 const settings = useSettingsStore()
 
 const pin = ref('')
 const unlocked = ref(false)
-const unlockedViaSuper = ref(false)
+const unlockedViaRecovery = ref(false)
+const newRecoveryCode = ref<string | null>(null)
 const recoveryMode = ref(false)
 const error = ref('')
 const success = ref('')
@@ -23,20 +33,21 @@ async function verify() {
   success.value = ''
   busy.value = true
   try {
-    const hash = settings.parental.pinHash
-    const candidate = normalizePin(pin.value)
-    if (!(await verifyParentalAccess(candidate, hash))) {
+    const ok = recoveryMode.value
+      ? await verifyRecoveryCode(pin.value, settings.parental.recoveryHash)
+      : await verifyParentalAccess(pin.value, settings.parental.pinHash)
+    if (!ok) {
       error.value = recoveryMode.value
-        ? 'Super-PIN ist falsch.'
+        ? 'Wiederherstellungscode ist falsch.'
         : 'PIN ist falsch.'
       return
     }
 
-    unlockedViaSuper.value = isSuperPin(candidate)
+    unlockedViaRecovery.value = recoveryMode.value
     unlocked.value = true
     limitInput.value = settings.parental.dailyLimitMinutes
 
-    if (recoveryMode.value && unlockedViaSuper.value) {
+    if (recoveryMode.value && unlockedViaRecovery.value) {
       settings.clearParentalControls()
       success.value = 'Jugendschutz zurückgesetzt. Neue PIN setzen oder schließen.'
     }
@@ -60,7 +71,7 @@ function resetToday() {
 function resetParental() {
   settings.clearParentalControls()
   success.value = 'Jugendschutz zurückgesetzt. Neue PIN setzen oder schließen.'
-  unlockedViaSuper.value = true
+  unlockedViaRecovery.value = true
 }
 
 async function changePin() {
@@ -70,10 +81,6 @@ async function changePin() {
   const nextConfirm = normalizePin(newPinConfirm.value)
   if (!isValidPin(nextPin)) {
     error.value = 'Neue PIN muss 4–6 Ziffern haben.'
-    return
-  }
-  if (isSuperPin(nextPin)) {
-    error.value = 'Super-PIN darf nicht als Eltern-PIN verwendet werden.'
     return
   }
   if (nextPin !== nextConfirm) {
@@ -86,8 +93,11 @@ async function changePin() {
     settings.setParentalPinHash(hash)
     newPin.value = ''
     newPinConfirm.value = ''
-    unlockedViaSuper.value = false
+    unlockedViaRecovery.value = false
     recoveryMode.value = false
+    if (!settings.parental.recoveryHash) {
+      await createRecoveryCode()
+    }
     success.value = 'Neue PIN gespeichert.'
   } catch {
     error.value = 'PIN konnte nicht geändert werden.'
@@ -96,10 +106,29 @@ async function changePin() {
   }
 }
 
+async function createRecoveryCode() {
+  const code = generateRecoveryCode()
+  settings.setRecoveryHash(await hashRecoveryCode(code))
+  newRecoveryCode.value = code
+}
+
+async function regenerateRecoveryCode() {
+  error.value = ''
+  busy.value = true
+  try {
+    await createRecoveryCode()
+    success.value = 'Neuer Wiederherstellungscode erzeugt. Der alte Code gilt nicht mehr.'
+  } catch {
+    error.value = 'Code konnte nicht erzeugt werden.'
+  } finally {
+    busy.value = false
+  }
+}
+
 function openRecovery() {
   recoveryMode.value = true
   unlocked.value = false
-  unlockedViaSuper.value = false
+  unlockedViaRecovery.value = false
   pin.value = ''
   error.value = ''
   success.value = ''
@@ -137,21 +166,21 @@ function onCancel() {
         <template v-if="!unlocked">
           <p class="mt-3 text-[var(--text-base)]">
             <template v-if="recoveryMode">
-              Super-PIN eingeben, um den Jugendschutz zurückzusetzen.
+              Wiederherstellungscode (8 Ziffern) eingeben, um den Jugendschutz zurückzusetzen.
             </template>
             <template v-else>
               Eltern-PIN eingeben.
             </template>
           </p>
           <label class="mt-5 block font-bold" for="settings-pin">
-            {{ recoveryMode ? 'Super-PIN' : 'PIN' }}
+            {{ recoveryMode ? 'Wiederherstellungscode' : 'PIN' }}
           </label>
           <input
             id="settings-pin"
             v-model="pin"
             class="mt-2 w-full rounded-2xl border-2 border-[#dfbd8c] bg-white px-4 py-3 text-lg tracking-widest"
             inputmode="numeric"
-            maxlength="6"
+            :maxlength="recoveryMode ? 9 : 6"
             type="password"
             autocomplete="one-time-code"
             @keyup.enter="verify"
@@ -180,7 +209,7 @@ function onCancel() {
 
         <template v-else>
           <p class="mt-3 text-[var(--text-base)]">
-            <template v-if="unlockedViaSuper && !settings.isParentalActive">
+            <template v-if="unlockedViaRecovery && !settings.isParentalActive">
               Jugendschutz ist aus. Neue PIN setzen oder schließen.
             </template>
             <template v-else>
@@ -188,10 +217,10 @@ function onCancel() {
             </template>
           </p>
           <p
-            v-if="unlockedViaSuper && settings.isParentalActive"
+            v-if="unlockedViaRecovery && settings.isParentalActive"
             class="mt-2 text-sm font-bold text-[#6b4f3a]"
           >
-            Super-PIN erkannt — Wiederherstellung aktiv.
+            Mit Wiederherstellungscode angemeldet.
           </p>
           <p v-if="success" class="mt-3 font-bold text-[#2f6b3a]" role="status">{{ success }}</p>
 
@@ -212,7 +241,7 @@ function onCancel() {
             </AppButton>
 
             <AppButton
-              v-if="unlockedViaSuper"
+              v-if="unlockedViaRecovery"
               class="mt-3"
               variant="secondary"
               block
@@ -221,6 +250,23 @@ function onCancel() {
               Jugendschutz komplett zurücksetzen
             </AppButton>
           </template>
+
+          <div v-if="newRecoveryCode" class="mt-4 rounded-2xl bg-white p-4 text-center">
+            <p class="font-bold">Neuer Wiederherstellungscode (jetzt notieren!)</p>
+            <p class="mt-2 font-mono text-3xl font-bold tracking-widest" data-testid="recovery-code">
+              {{ formatRecoveryCode(newRecoveryCode) }}
+            </p>
+          </div>
+          <AppButton
+            v-if="settings.isParentalActive && !unlockedViaRecovery"
+            class="mt-3"
+            variant="secondary"
+            block
+            :disabled="busy"
+            @click="regenerateRecoveryCode"
+          >
+            {{ settings.parental.recoveryHash ? 'Neuen Wiederherstellungscode erzeugen' : 'Wiederherstellungscode erzeugen' }}
+          </AppButton>
 
           <h3 class="mt-6 font-[var(--font-display)] text-xl font-semibold">
             {{ settings.isParentalActive ? 'PIN ändern' : 'Neue PIN setzen' }}

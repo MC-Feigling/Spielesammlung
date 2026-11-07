@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PARENTAL_SUPER_PIN } from '../../app/constants/parental'
 import {
   hashPin,
-  isSuperPin,
+  formatRecoveryCode,
+  generateRecoveryCode,
+  hashRecoveryCode,
+  verifyRecoveryCode,
   isValidPin,
   normalizePin,
   verifyParentalAccess,
@@ -61,16 +63,25 @@ describe('pin utils', () => {
     expect(withoutSubtle).toBe(withSubtle)
   })
 
-  it('recognizes the built-in super pin', () => {
-    expect(isSuperPin(PARENTAL_SUPER_PIN)).toBe(true)
-    expect(isSuperPin(` ${PARENTAL_SUPER_PIN} `)).toBe(true)
-    expect(isSuperPin('1234')).toBe(false)
+  it('has no built-in master pin: access needs the stored hash', async () => {
+    expect(await verifyParentalAccess('314159', null)).toBe(false)
+    expect(await verifyParentalAccess('314159', 'deadbeef')).toBe(false)
   })
 
-  it('grants parental access via super pin without stored hash', async () => {
-    expect(await verifyParentalAccess(PARENTAL_SUPER_PIN, null)).toBe(true)
-    expect(await verifyParentalAccess(PARENTAL_SUPER_PIN, 'deadbeef')).toBe(true)
-    expect(await verifyParentalAccess('1234', null)).toBe(false)
+  it('generates 8-digit recovery codes', () => {
+    const codes = new Set(Array.from({ length: 20 }, () => generateRecoveryCode()))
+    for (const code of codes) expect(code).toMatch(/^\d{8}$/)
+    expect(codes.size).toBeGreaterThan(15)
+    expect(formatRecoveryCode('12345678')).toBe('1234 5678')
+  })
+
+  it('verifies recovery codes against their hash only', async () => {
+    const hash = await hashRecoveryCode('12345678')
+    expect(await verifyRecoveryCode('1234 5678', hash)).toBe(true)
+    expect(await verifyRecoveryCode('87654321', hash)).toBe(false)
+    expect(await verifyRecoveryCode('1234', hash)).toBe(false)
+    expect(await verifyRecoveryCode('12345678', null)).toBe(false)
+    expect(hash).not.toBe(await hashPin('123456'))
   })
 
   it('grants parental access via matching user pin hash', async () => {
