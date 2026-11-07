@@ -137,6 +137,8 @@ export function scoreCategory(category: KniffelCategory, dice: readonly number[]
       return total >= 25 ? 40 : 0
     case 'fewPips':
       return total <= 10 ? 40 : 0
+    default:
+      return 0
   }
 }
 

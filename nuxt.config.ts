@@ -10,6 +10,11 @@ export default defineNuxtConfig({
     { path: '~/components', pathPrefix: false },
     { path: '~/features', pathPrefix: false, extensions: ['vue'] },
   ],
+  typescript: {
+    tsConfig: {
+      compilerOptions: { noUncheckedIndexedAccess: false },
+    },
+  },
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: {

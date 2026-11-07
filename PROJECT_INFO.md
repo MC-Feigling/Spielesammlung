@@ -14,6 +14,7 @@ Kinderfreundliche Browser-Spielesammlung (2–4 Spieler, ein Laptop).
 ./start.sh          # One-Click: Bun + deps + Dev-Server (+ Browser)
 bun install
 bun run dev
+bun run typecheck
 bun run test
 bun run build
 bun run preview
@@ -33,13 +34,13 @@ Jugendschutz: `docs/superpowers/plans/2026-08-04-jugendschutz-spielzeit.md`
 
 Memory, Kniffel (Custom-Score), Mensch ärgere dich nicht, Spurrennen, UNO, Vier gewinnt, Shut the Box, Mühle, Pferderennen, Puzzle-Rennen, Drachenkampf, Handwerker
 
-## Jugendschutz Super-PIN
+## Jugendschutz Wiederherstellung
 
-Wiederherstellung bei vergessener Eltern-PIN: **`314159`**
+Beim Einrichten wird ein zufälliger 8-stelliger Wiederherstellungscode erzeugt und **einmal** angezeigt (bitte notieren). Im Browser liegt nur dessen Hash.
 
-- Dialoge „PIN vergessen?“ → Super-PIN → Jugendschutz zurücksetzen
-- Super-PIN gilt auch als Master-Schlüssel in Einstellungen / Extra-Zeit
-- Super-PIN darf nicht als normale Eltern-PIN gesetzt werden
+- „PIN vergessen?“ → Code eingeben → Jugendschutz wird zurückgesetzt, danach neue PIN setzen
+- In den Einstellungen kann ein neuer Code erzeugt werden (der alte wird ungültig)
+- Es gibt keinen festen Master-Code im Quelltext
 
 ## Branch
 

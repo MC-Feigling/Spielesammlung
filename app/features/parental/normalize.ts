@@ -2,6 +2,7 @@ import type { ParentalControls } from '~/types/profile'
 
 export const DEFAULT_PARENTAL: ParentalControls = {
   pinHash: null,
+  recoveryHash: null,
   dailyLimitMinutes: 45,
   usedMsToday: 0,
   dayKey: '',
@@ -20,6 +21,12 @@ export function normalizeParental(raw: unknown): ParentalControls {
   } else {
     base.pinHash = null
   }
+
+  base.recoveryHash = base.pinHash !== null
+    && typeof value.recoveryHash === 'string'
+    && value.recoveryHash.length > 0
+    ? value.recoveryHash
+    : null
 
   if (typeof value.dailyLimitMinutes === 'number' && Number.isFinite(value.dailyLimitMinutes)) {
     base.dailyLimitMinutes = Math.min(240, Math.max(5, Math.round(value.dailyLimitMinutes)))

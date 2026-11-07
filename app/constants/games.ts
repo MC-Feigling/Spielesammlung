@@ -16,7 +16,11 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
 ]
 
 export function isGameId(value: string): value is GameId {
-  return value === 'memory' || value === 'kniffel' || value === 'ludo' || value === 'racing' || value === 'uno' || value === 'connectFour' || value === 'shutTheBox' || value === 'muehle' || value === 'horseRacing' || value === 'puzzleRace' || value === 'dragonBoss' || value === 'handyman'
+  return GAMES.some((game) => game.id === value)
+}
+
+export function gameTitle(id: string | null | undefined): string {
+  return GAMES.find((game) => game.id === id)?.title ?? 'Spielrunde'
 }
 
 export function formatPlayerRange(minPlayers: number, maxPlayers: number): string {
