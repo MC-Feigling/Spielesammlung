@@ -13,6 +13,7 @@ import {
   type HorseRacingState,
 } from './engine'
 import { chooseHorseRacingActions } from './ai'
+import { coatForLane, gallopPose } from './sprite'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -24,7 +25,13 @@ const emit = defineEmits<{
 
 const { play } = useSound()
 
-const HORSE_COLORS = ['#a85a2a', '#2a6b8a', '#3d7a48', '#7a3d58'] as const
+/** Jockey silks per seat: [main, accent/text]. */
+const SILKS = [
+  ['#e45b3a', '#fff6e8'],
+  ['#f0b429', '#2b2118'],
+  ['#3d8fd1', '#fff6e8'],
+  ['#4faf6a', '#fff6e8'],
+] as const
 const CAMERA_PAD_BEHIND = 8
 const CAMERA_PAD_AHEAD = 22
 const MIN_VIEW_SPAN = VIEW_AHEAD + VIEW_BEHIND
@@ -47,7 +54,6 @@ const humanPlayers = computed(() => props.players.filter((player) => player.type
 const countdownSeconds = computed(() => Math.ceil(state.value.countdownMs / 1000))
 const leaderProgress = computed(() => Math.max(0, ...state.value.horses.map((horse) => horse.progress)))
 const trailerProgress = computed(() => Math.min(...state.value.horses.map((horse) => horse.progress)))
-const raceProgressPercent = computed(() => Math.min(100, (leaderProgress.value / TRACK_LENGTH) * 100))
 const isRacing = computed(() => state.value.phase === 'racing')
 const rankedHorses = computed(() =>
   [...state.value.horses].sort((a, b) => b.progress - a.progress),
@@ -63,8 +69,6 @@ const cameraWindow = computed(() => {
   const origin = trailing - CAMERA_PAD_BEHIND
   return { origin, span }
 })
-
-const parallaxOffset = computed(() => (leaderProgress.value * 2.4) % 120)
 
 let rafId: number | undefined
 let lastTimestamp = 0
@@ -150,20 +154,69 @@ function handleWindowBlur(): void {
   clearAllHolds()
 }
 
-function progressToLeftPercent(progress: number): number {
+const SCENE_W = 1500
+const SCENE_H = 580
+const TRACK_TOP = 252
+const TRACK_BOTTOM = 548
+const PX_PER_UNIT = SCENE_W / MIN_VIEW_SPAN
+const MAX_JUMP_LIFT = 72
+const BACK_POSTS = Array.from({ length: 27 }, (_, index) => index)
+const FRONT_POSTS = Array.from({ length: 18 }, (_, index) => index)
+const CROWD_COLORS = ['#e45b3a', '#f0b429', '#3d8fd1', '#4faf6a', '#9b5de5', '#ffffff', '#2b2118'] as const
+const CROWD = Array.from({ length: 4 * 46 }, (_, index) => {
+  const row = Math.floor(index / 46)
+  const col = index % 46
+  return {
+    x: 12 + col * 12 + (row % 2) * 6,
+    y: 58 + row * 15,
+    color: CROWD_COLORS[(col * 7 + row * 3) % CROWD_COLORS.length]!,
+  }
+})
+const TREES = Array.from({ length: 30 }, (_, index) => ({
+  x: 20 + index * 50 + (index % 3) * 7,
+  r: 16 + (index % 4) * 3,
+  color: index % 2 ? '#3f7d3a' : '#4a8a43',
+}))
+
+const reducedMotion = ref(false)
+
+onMounted(() => {
+  reducedMotion.value = typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+})
+
+const laneCount = computed(() => Math.max(1, state.value.horses.length))
+const laneHeight = computed(() => (TRACK_BOTTOM - TRACK_TOP) / laneCount.value)
+const cameraPx = computed(() => cameraWindow.value.origin * PX_PER_UNIT)
+
+function wrap(value: number, size: number): number {
+  return ((value % size) + size) % size
+}
+
+function laneTop(lane: number): number {
+  return TRACK_TOP + lane * laneHeight.value
+}
+
+function laneGround(lane: number): number {
+  return laneTop(lane + 1) - 6
+}
+
+function laneScale(lane: number): number {
+  const base = laneCount.value <= 2 ? 1.1 : laneCount.value === 3 ? 0.95 : 0.82
+  return base + lane * 0.05
+}
+
+function progressToX(progress: number, clamp = true): number {
   const { origin, span } = cameraWindow.value
-  const left = ((progress - origin) / span) * 100
-  return Math.min(96, Math.max(4, left))
+  const percent = ((progress - origin) / span) * 100
+  const value = clamp ? Math.min(96, Math.max(4, percent)) : percent
+  return (value / 100) * SCENE_W
 }
 
-function horseLaneBottom(seatIndex: number): number {
-  return 11 + (seatIndex % 4) * 8
-}
-
-function jumpOffsetPx(airMs: number): number {
+function jumpLift(airMs: number): number {
   if (airMs <= 0) return 0
   const t = 1 - Math.min(1, airMs / JUMP_AIR_MS)
-  return Math.sin(Math.PI * t) * 56
+  return Math.sin(Math.PI * t) * MAX_JUMP_LIFT
 }
 
 function getHorsePlayer(seatIndex: number): SessionPlayer | undefined {
@@ -171,7 +224,11 @@ function getHorsePlayer(seatIndex: number): SessionPlayer | undefined {
 }
 
 function getHorseColor(seatIndex: number): string {
-  return HORSE_COLORS[seatIndex % HORSE_COLORS.length]!
+  return SILKS[seatIndex % SILKS.length]![0]
+}
+
+function getHorseAccent(seatIndex: number): string {
+  return SILKS[seatIndex % SILKS.length]![1]
 }
 
 function isGalloping(horse: HorseRacingHorse): boolean {
@@ -180,6 +237,42 @@ function isGalloping(horse: HorseRacingHorse): boolean {
 
 function isSlowed(horse: HorseRacingHorse): boolean {
   return horse.slowdownUntil > 0 && horse.speed < maxSpeedForProgress(horse.progress) * 0.85
+}
+
+const visibleHurdles = computed(() => state.value.hurdles
+  .map((hurdle) => ({ id: hurdle.id, x: progressToX(hurdle.progress, false) }))
+  .filter((hurdle) => hurdle.x > -80 && hurdle.x < SCENE_W + 80))
+
+const finishX = computed(() => progressToX(TRACK_LENGTH, false))
+const showFinish = computed(() => finishX.value < SCENE_W + 60)
+
+const horseViews = computed(() => state.value.horses.map((horse, lane) => {
+  const name = getHorsePlayer(horse.seatIndex)?.displayName ?? `P${horse.seatIndex + 1}`
+  const shortName = name.length > 12 ? `${name.slice(0, 11)}…` : name
+  const airborne = horse.airMs > 0
+  return {
+    seatIndex: horse.seatIndex,
+    lane,
+    x: progressToX(horse.progress),
+    ground: laneGround(lane),
+    scale: laneScale(lane),
+    lift: jumpLift(horse.airMs),
+    pose: reducedMotion.value
+      ? (airborne ? 'jump' as const : 'stand' as const)
+      : gallopPose(horse.progress, horse.speed, airborne),
+    rank: rankedHorses.value.findIndex((ranked) => ranked.seatIndex === horse.seatIndex) + 1,
+    name: shortName,
+    tagWidth: Math.min(170, shortName.length * 8.6 + 40),
+    silk: getHorseColor(horse.seatIndex),
+    silkAccent: getHorseAccent(horse.seatIndex),
+    coat: coatForLane(lane),
+    galloping: isGalloping(horse),
+    slowed: isSlowed(horse),
+  }
+}))
+
+function minimapX(progress: number): number {
+  return 20 + Math.min(1, Math.max(0, progress / TRACK_LENGTH)) * 320
 }
 
 function controlScheme(humanIndex: number): { hold: string; jump: string } {
@@ -266,158 +359,313 @@ onBeforeUnmount(() => {
           Tastatur: Halten = Galopp · Tippen = Sprung
         </p>
       </div>
-      <div class="min-w-[10rem] flex-1 sm:max-w-xs">
-        <div class="mb-1 flex justify-between text-xs font-bold text-[var(--text-muted)]">
-          <span>Ziel</span>
-          <span class="tabular-nums">{{ Math.round(raceProgressPercent) }}%</span>
-        </div>
-        <div class="h-2.5 overflow-hidden rounded-full bg-[#d7c4a3]">
-          <div
-            class="h-full rounded-full bg-[#2a6b8a] transition-[width] duration-100 ease-linear"
-            :style="{ width: `${raceProgressPercent}%` }"
-          />
-        </div>
-      </div>
+      <ol class="flex flex-wrap gap-2">
+        <li
+          v-for="(horse, rank) in rankedHorses"
+          :key="`rank-${horse.seatIndex}`"
+          class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold shadow-[0_2px_0_rgba(43,33,24,0.35)]"
+          :style="{ backgroundColor: getHorseColor(horse.seatIndex), color: getHorseAccent(horse.seatIndex) }"
+        >
+          <span class="tabular-nums opacity-80">{{ rank + 1 }}.</span>
+          <span class="max-w-[7rem] truncate">{{ getHorsePlayer(horse.seatIndex)?.displayName ?? `P${horse.seatIndex + 1}` }}</span>
+        </li>
+      </ol>
     </div>
 
-    <ol class="flex flex-wrap gap-2">
-      <li
-        v-for="(horse, rank) in rankedHorses"
-        :key="`rank-${horse.seatIndex}`"
-        class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold text-[#fff8ef] shadow-[0_2px_0_rgba(43,33,24,0.35)]"
-        :style="{ backgroundColor: getHorseColor(horse.seatIndex) }"
-      >
-        <span class="tabular-nums opacity-80">{{ rank + 1 }}.</span>
-        <span class="max-w-[7rem] truncate">{{ getHorsePlayer(horse.seatIndex)?.displayName ?? `P${horse.seatIndex + 1}` }}</span>
-      </li>
-    </ol>
-
     <div class="relative overflow-hidden rounded-[1.6rem] shadow-[0_16px_0_#1e3a2f]">
-      <div
-        class="horse-arena relative h-[min(62vh,520px)] w-full select-none"
+      <svg
+        class="block h-auto w-full select-none"
+        :viewBox="`0 0 ${SCENE_W} ${SCENE_H}`"
         role="img"
         aria-label="Pferderennen Bahn"
       >
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-[46%] overflow-hidden" aria-hidden="true">
-          <div class="absolute inset-0 sky-wash" />
-          <div class="cloud cloud-a" :style="{ transform: `translateX(${-parallaxOffset * 0.35}%)` }" />
-          <div class="cloud cloud-b" :style="{ transform: `translateX(${-parallaxOffset * 0.55}%)` }" />
-          <div class="hills" :style="{ transform: `translateX(${-parallaxOffset * 0.2}%)` }" />
-        </div>
+        <defs>
+          <linearGradient id="hr-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#5fb0dc" />
+            <stop offset="1" stop-color="#cfe9f2" />
+          </linearGradient>
+          <linearGradient id="hr-dirt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#c79a5f" />
+            <stop offset="1" stop-color="#a87843" />
+          </linearGradient>
+          <pattern id="hr-check" width="16" height="16" patternUnits="userSpaceOnUse">
+            <rect width="16" height="16" fill="#fff" />
+            <rect width="8" height="8" fill="#111" />
+            <rect x="8" y="8" width="8" height="8" fill="#111" />
+          </pattern>
+          <pattern
+            id="hr-specks"
+            width="200"
+            height="60"
+            patternUnits="userSpaceOnUse"
+            :patternTransform="`translate(${-wrap(cameraPx, 200)} 0)`"
+          >
+            <ellipse cx="20" cy="10" rx="5" ry="1.4" fill="#8f6436" opacity="0.35" />
+            <ellipse cx="90" cy="34" rx="4" ry="1.3" fill="#8f6436" opacity="0.3" />
+            <ellipse cx="150" cy="18" rx="6" ry="1.5" fill="#8f6436" opacity="0.35" />
+            <ellipse cx="60" cy="52" rx="3" ry="1.2" fill="#f1dcb2" opacity="0.35" />
+            <ellipse cx="180" cy="46" rx="4" ry="1.2" fill="#8f6436" opacity="0.3" />
+          </pattern>
+          <g id="hr-cloud">
+            <ellipse cx="0" cy="10" rx="56" ry="16" />
+            <circle cx="-24" cy="2" r="18" />
+            <circle cx="4" cy="-8" r="24" />
+            <circle cx="30" cy="2" r="16" />
+          </g>
+          <g id="hr-hills">
+            <path d="M0 190 C160 130 300 160 420 150 C560 135 700 175 860 150 C1020 125 1200 160 1500 190 L1500 240 L0 240 Z" fill="#7fb36d" />
+            <path d="M0 210 C200 180 360 200 520 190 C700 180 880 205 1100 185 C1260 172 1400 190 1500 210 L1500 250 L0 250 Z" fill="#5f9a58" />
+          </g>
+          <g id="hr-trees">
+            <g v-for="(tree, i) in TREES" :key="`tree-${i}`">
+              <rect :x="tree.x - 3" y="200" width="6" height="26" fill="#5d3a1f" />
+              <circle :cx="tree.x" :cy="198 - tree.r / 2" :r="tree.r" :fill="tree.color" />
+            </g>
+          </g>
+          <g id="hr-stand">
+            <rect x="0" y="40" width="560" height="78" fill="#e9dcc6" />
+            <path d="M-20 44 L580 44 L560 10 L0 10 Z" fill="#e4572e" />
+            <path
+              v-for="i in 14"
+              :key="`awning-${i}`"
+              :d="`M${(i - 1) * 40} 10 L${(i - 1) * 40 + 20} 10 L${(i - 1) * 40 + 19} 44 L${(i - 1) * 40 - 1} 44 Z`"
+              fill="#fff"
+              opacity="0.9"
+            />
+            <g v-for="(fan, i) in CROWD" :key="`fan-${i}`">
+              <circle :cx="fan.x" :cy="fan.y" r="5" fill="#f2c9a0" />
+              <rect :x="fan.x - 5" :y="fan.y + 4" width="10" height="8" rx="3" :fill="fan.color" />
+            </g>
+            <g v-for="i in 6" :key="`flag-${i}`">
+              <rect :x="30 + (i - 1) * 100" y="-26" width="3" height="40" fill="#5d3a1f" />
+              <path
+                class="hr-flag"
+                :d="`M${33 + (i - 1) * 100} -26 L${63 + (i - 1) * 100} -19 L${33 + (i - 1) * 100} -12 Z`"
+                :fill="CROWD_COLORS[i - 1]"
+              />
+            </g>
+          </g>
+          <g id="hr-hedge">
+            <ellipse cx="0" cy="2" rx="30" ry="5" fill="rgba(40,30,15,0.3)" />
+            <rect x="-26" y="-34" width="52" height="34" rx="12" fill="#3f7d3a" />
+            <circle cx="-16" cy="-30" r="10" fill="#4f9447" />
+            <circle cx="0" cy="-34" r="11" fill="#58a04f" />
+            <circle cx="16" cy="-30" r="10" fill="#4f9447" />
+            <rect x="-32" y="-46" width="6" height="46" rx="2" fill="#fff" />
+            <rect x="26" y="-46" width="6" height="46" rx="2" fill="#fff" />
+            <rect x="-34" y="-44" width="68" height="6" rx="3" fill="#fff" />
+            <rect x="-34" y="-44" width="12" height="6" fill="#e4572e" />
+            <rect x="-10" y="-44" width="12" height="6" fill="#e4572e" />
+            <rect x="14" y="-44" width="12" height="6" fill="#e4572e" />
+          </g>
+        </defs>
 
-        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[60%] track-body" aria-hidden="true">
-          <div
-            class="track-dashes absolute inset-x-0 top-[16%] h-1.5 opacity-70"
-            :style="{ backgroundPositionX: `${-leaderProgress * 8}px` }"
+        <!-- sky + parallax background -->
+        <rect :width="SCENE_W" :height="SCENE_H" fill="url(#hr-sky)" />
+        <circle cx="1320" cy="70" r="56" fill="#ffe27a" opacity="0.25" />
+        <circle cx="1320" cy="70" r="40" fill="#ffe27a" />
+        <g fill="#fff" :transform="`translate(${-wrap(cameraPx * 0.04, SCENE_W)} 0)`">
+          <use v-for="offset in [0, SCENE_W]" :key="`clouds-${offset}`" href="#hr-cloud" :x="180 + offset" y="70" />
+          <use v-for="offset in [0, SCENE_W]" :key="`clouds-b-${offset}`" href="#hr-cloud" :x="640 + offset" y="50" />
+          <use v-for="offset in [0, SCENE_W]" :key="`clouds-c-${offset}`" href="#hr-cloud" :x="1040 + offset" y="96" />
+        </g>
+        <g :transform="`translate(${-wrap(cameraPx * 0.08, SCENE_W)} 0)`">
+          <use href="#hr-hills" x="0" />
+          <use href="#hr-hills" :x="SCENE_W" />
+        </g>
+        <g :transform="`translate(${-wrap(cameraPx * 0.25, SCENE_W)} 0)`">
+          <use href="#hr-trees" x="0" />
+          <use href="#hr-trees" :x="SCENE_W" />
+          <use href="#hr-stand" x="280" y="128" />
+          <use href="#hr-stand" :x="280 + SCENE_W" y="128" />
+        </g>
+
+        <!-- track -->
+        <rect x="0" :y="TRACK_TOP" :width="SCENE_W" :height="SCENE_H - TRACK_TOP" fill="url(#hr-dirt)" />
+        <rect x="0" :y="TRACK_TOP" :width="SCENE_W" :height="SCENE_H - TRACK_TOP" fill="url(#hr-specks)" />
+        <rect
+          v-for="lane in laneCount - 1"
+          :key="`lane-line-${lane}`"
+          x="0"
+          :y="laneTop(lane) - 1.5"
+          :width="SCENE_W"
+          height="3"
+          fill="#fff6e3"
+          opacity="0.55"
+        />
+        <rect x="0" :y="TRACK_TOP - 10" :width="SCENE_W" height="6" fill="#fff" />
+        <rect x="0" :y="TRACK_TOP + 2" :width="SCENE_W" height="5" fill="#fff" />
+        <rect
+          v-for="post in BACK_POSTS"
+          :key="`post-${post}`"
+          :x="post * 60 - wrap(cameraPx, 60)"
+          :y="TRACK_TOP - 14"
+          width="6"
+          height="26"
+          fill="#fff"
+        />
+
+        <!-- finish post -->
+        <g v-if="showFinish">
+          <rect :x="finishX - 3" :y="TRACK_TOP" width="6" :height="TRACK_BOTTOM - TRACK_TOP" fill="#fff" opacity="0.75" />
+          <rect :x="finishX - 7" :y="TRACK_TOP - 90" width="14" :height="SCENE_H - TRACK_TOP + 90" fill="url(#hr-check)" />
+          <rect :x="finishX - 55" :y="TRACK_TOP - 112" width="110" height="34" rx="8" fill="#2b2118" />
+          <text :x="finishX" :y="TRACK_TOP - 88" text-anchor="middle" font-size="22" font-weight="900" fill="#fff">ZIEL</text>
+        </g>
+
+        <!-- lanes back to front: hurdles + horse -->
+        <g v-for="hv in horseViews" :key="`lane-${hv.seatIndex}`">
+          <use
+            v-for="hurdle in visibleHurdles"
+            :key="`hurdle-${hurdle.id}-${hv.lane}`"
+            href="#hr-hedge"
+            :transform="`translate(${hurdle.x + hv.lane * 6} ${hv.ground}) scale(${hv.scale})`"
           />
-          <div class="rail rail-top" />
-          <div class="rail rail-bottom" />
-        </div>
 
-        <div
-          v-for="hurdle in state.hurdles"
-          :key="`hurdle-${hurdle.id}`"
-          class="absolute z-10 -translate-x-1/2"
-          :style="{
-            left: `${progressToLeftPercent(hurdle.progress)}%`,
-            bottom: '17%',
-          }"
-        >
-          <div class="hurdle" aria-hidden="true">
-            <span class="hurdle-post left" />
-            <span class="hurdle-bar" />
-            <span class="hurdle-post right" />
-          </div>
-        </div>
+          <g v-if="hv.galloping && !reducedMotion" opacity="0.3">
+            <rect
+              v-for="k in 3"
+              :key="`speed-${k}`"
+              :x="hv.x - 100 * hv.scale - k * 26"
+              :y="hv.ground - 70 * hv.scale + k * 9 - hv.lift * hv.scale"
+              :width="50 - k * 8"
+              height="3"
+              rx="1.5"
+              fill="#fff"
+            />
+          </g>
+          <g
+            v-if="hv.galloping && hv.lift === 0 && !reducedMotion"
+            class="hr-dust"
+            :transform="`translate(${hv.x - 66 * hv.scale} ${hv.ground - 6}) scale(${hv.scale})`"
+          >
+            <circle cx="0" cy="0" r="10" fill="#d9bf92" />
+            <circle cx="-14" cy="-4" r="8" fill="#e3cda5" />
+            <circle cx="-26" cy="2" r="6" fill="#e8d6b3" opacity="0.8" />
+            <circle cx="-38" cy="-2" r="4" fill="#efe2c8" opacity="0.6" />
+          </g>
 
-        <div
-          v-for="horse in state.horses"
-          :key="`horse-${horse.seatIndex}`"
-          class="absolute z-20 -translate-x-1/2"
-          :class="[
-            isSlowed(horse) ? 'opacity-80' : 'opacity-100',
-            isGalloping(horse) ? 'is-galloping' : '',
-            horse.airMs > 0 ? 'is-jumping' : '',
-          ]"
-          :style="{
-            left: `${progressToLeftPercent(horse.progress)}%`,
-            bottom: `calc(${horseLaneBottom(horse.seatIndex)}% + ${jumpOffsetPx(horse.airMs)}px)`,
-            zIndex: 20 + horse.seatIndex,
-          }"
-        >
-          <div class="flex flex-col items-center gap-0.5">
-            <span
-              class="max-w-[7rem] truncate rounded-full px-2.5 py-0.5 text-[0.72rem] font-extrabold text-[#fff8ef] shadow-md"
-              :style="{ backgroundColor: getHorseColor(horse.seatIndex) }"
-            >
-              {{ getHorsePlayer(horse.seatIndex)?.displayName ?? `P${horse.seatIndex + 1}` }}
-            </span>
-            <svg
-              class="horse-svg h-[4.6rem] w-[7.2rem] drop-shadow-[0_8px_0_rgba(30,40,20,0.22)] sm:h-[5.4rem] sm:w-[8.4rem]"
-              viewBox="0 0 160 100"
-              aria-hidden="true"
-            >
-              <ellipse class="dust" cx="42" cy="90" rx="22" ry="5" fill="rgba(90,70,40,0.3)" />
-              <g class="horse-figure" :style="{ color: getHorseColor(horse.seatIndex) }">
-                <path
-                  class="tail"
-                  fill="currentColor"
-                  d="M34 48c-10 2-18 10-22 18-1 2 1 4 3 3 6-4 12-8 16-14 2-3 3-7 3-7z"
-                  opacity="0.9"
-                />
-                <path
-                  fill="currentColor"
-                  d="M42 54c6-14 24-24 46-22 14 1 26 8 34 18 2 3 1 6-2 7l-8 2c-8 2-16 2-24 0-12-2-22 1-32 8-3 2-7 1-9-2-3-5-5-8-5-11z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M112 42c8-12 18-18 28-16 4 1 7 5 6 9-1 3-4 5-8 5h-8c-6 0-12 2-16 6-2 2-5 1-6-1-2-4 0-8 4-3z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M136 36c6-1 12 2 14 7 1 3-1 6-4 7l-9 2c-4 0-7-2-8-5-2-4 1-9 7-11z"
-                />
-                <circle cx="146" cy="40" r="2.4" fill="#1b1610" />
-                <path fill="#1b1610" d="M140 28c3-7 9-10 13-8 1 3-1 7-5 10l-8-2z" opacity="0.65" />
-                <path fill="#1b1610" d="M118 34c6-4 12-5 18-3-2 4-7 6-12 7-4 0-7-2-6-4z" opacity="0.45" />
-                <g class="legs" fill="#1b1610">
-                  <path class="leg leg-1" d="M58 68c1 8 0 16-1 22h5c2-7 3-14 2-22z" />
-                  <path class="leg leg-2" d="M74 70c0 7 1 14 2 20h5c0-7-2-14-3-20z" />
-                  <path class="leg leg-3" d="M98 66c1 8 2 16 1 22h5c2-7 1-14 0-22z" />
-                  <path class="leg leg-4" d="M112 68c2 7 3 14 2 20h5c1-7 0-14-2-20z" />
-                </g>
-                <path
-                  fill="currentColor"
-                  d="M48 50c-5 2-8 7-7 11 4 0 9-2 12-5 2-3 1-7-5-6z"
-                  opacity="0.85"
-                />
-              </g>
-            </svg>
-          </div>
-        </div>
+          <g
+            :class="{ 'hr-slowed': hv.slowed }"
+            :transform="`translate(${hv.x - 96 * hv.scale} ${hv.ground - 126 * hv.scale}) scale(${hv.scale})`"
+          >
+            <HorseSprite
+              :coat="hv.coat"
+              :silk="hv.silk"
+              :silk-accent="hv.silkAccent"
+              :number="hv.lane + 1"
+              :pose="hv.pose"
+              :lift="hv.lift"
+            />
+          </g>
 
-        <div
-          v-if="state.phase === 'countdown'"
-          class="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#143028]/55 px-4 text-center backdrop-blur-[3px]"
-        >
-          <p class="font-[var(--font-display)] text-7xl font-bold text-[#fff8ef] drop-shadow-md sm:text-8xl">
-            {{ countdownSeconds }}
+          <g
+            v-if="hv.slowed"
+            class="hr-stars"
+            :transform="`translate(${hv.x + 20 * hv.scale} ${hv.ground - 150 * hv.scale - hv.lift * hv.scale})`"
+          >
+            <path
+              v-for="(dx, k) in [-24, 0, 24]"
+              :key="`star-${k}`"
+              :transform="`translate(${dx} ${k === 1 ? -12 : 0})`"
+              d="M0 -9 L2.6 -2.8 L9 -2.8 L4 1.4 L5.8 8 L0 4.2 L-5.8 8 L-4 1.4 L-9 -2.8 L-2.6 -2.8 Z"
+              fill="#ffd23f"
+              stroke="#2b2118"
+              stroke-width="1.5"
+            />
+          </g>
+
+          <g :transform="`translate(${hv.x + 20 * hv.scale - hv.tagWidth / 2} ${hv.ground - 166 * hv.scale - hv.lift * hv.scale})`">
+            <rect :width="hv.tagWidth" height="24" rx="12" :fill="hv.silk" stroke="#fff" stroke-width="2" />
+            <circle cx="12" cy="12" r="9" fill="#fff" />
+            <text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="900" :fill="hv.silk">{{ hv.rank }}</text>
+            <text x="26" y="17" font-size="14" font-weight="800" :fill="hv.silkAccent">{{ hv.name }}</text>
+          </g>
+        </g>
+
+        <!-- lane numbers -->
+        <g v-for="hv in horseViews" :key="`board-${hv.seatIndex}`">
+          <rect
+            x="12"
+            :y="laneTop(hv.lane) + laneHeight / 2 - 17"
+            width="34"
+            height="34"
+            rx="8"
+            :fill="hv.silk"
+            stroke="#fff"
+            stroke-width="3"
+          />
+          <text
+            x="29"
+            :y="laneTop(hv.lane) + laneHeight / 2 + 7"
+            text-anchor="middle"
+            font-size="20"
+            font-weight="900"
+            :fill="hv.silkAccent"
+          >{{ hv.lane + 1 }}</text>
+        </g>
+
+        <!-- front fence -->
+        <rect x="0" :y="SCENE_H - 26" :width="SCENE_W" height="8" fill="#fff" />
+        <rect x="0" :y="SCENE_H - 12" :width="SCENE_W" height="8" fill="#fff" />
+        <rect
+          v-for="post in FRONT_POSTS"
+          :key="`front-post-${post}`"
+          :x="post * 90 - wrap(cameraPx * 1.3, 90)"
+          :y="SCENE_H - 34"
+          width="9"
+          height="34"
+          fill="#fff"
+        />
+
+        <!-- minimap -->
+        <g :transform="`translate(${SCENE_W / 2 - 190} 16)`">
+          <rect width="380" height="40" rx="20" fill="rgba(43,33,24,0.75)" />
+          <rect x="20" y="18" width="320" height="5" rx="2.5" fill="#fff" opacity="0.4" />
+          <rect x="344" y="10" width="12" height="20" fill="url(#hr-check)" />
+          <g v-for="hv in horseViews" :key="`mini-${hv.seatIndex}`">
+            <circle
+              :cx="minimapX(state.horses[hv.lane]!.progress)"
+              cy="20"
+              r="9"
+              :fill="hv.silk"
+              stroke="#fff"
+              stroke-width="2"
+            />
+            <text
+              :x="minimapX(state.horses[hv.lane]!.progress)"
+              y="24.5"
+              text-anchor="middle"
+              font-size="11"
+              font-weight="900"
+              :fill="hv.silkAccent"
+            >{{ hv.lane + 1 }}</text>
+          </g>
+        </g>
+      </svg>
+
+      <div
+        v-if="state.phase === 'countdown'"
+        class="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#143028]/55 px-4 text-center backdrop-blur-[3px]"
+      >
+        <p class="font-[var(--font-display)] text-7xl font-bold text-[#fff8ef] drop-shadow-md sm:text-8xl">
+          {{ countdownSeconds }}
+        </p>
+        <p class="font-[var(--font-display)] text-2xl font-semibold text-[#fff8ef]">Gleich geht's los!</p>
+        <div class="mt-1 space-y-2 text-sm font-semibold text-[#e7f3ea]">
+          <p v-for="(human, index) in humanPlayers" :key="human.seatIndex">
+            <strong>{{ human.displayName }}:</strong>
+            <kbd class="mx-1 rounded-md bg-white/15 px-2 py-1 font-mono">{{ controlScheme(index).hold }}</kbd>
+            halten ·
+            <kbd class="mx-1 rounded-md bg-white/15 px-2 py-1 font-mono">{{ controlScheme(index).jump }}</kbd>
+            springen
           </p>
-          <p class="font-[var(--font-display)] text-2xl font-semibold text-[#fff8ef]">Gleich geht's los!</p>
-          <div class="mt-1 space-y-2 text-sm font-semibold text-[#e7f3ea]">
-            <p v-for="(human, index) in humanPlayers" :key="human.seatIndex">
-              <strong>{{ human.displayName }}:</strong>
-              <kbd class="mx-1 rounded-md bg-white/15 px-2 py-1 font-mono">{{ controlScheme(index).hold }}</kbd>
-              halten ·
-              <kbd class="mx-1 rounded-md bg-white/15 px-2 py-1 font-mono">{{ controlScheme(index).jump }}</kbd>
-              springen
-            </p>
-          </div>
         </div>
       </div>
     </div>
 
     <div
+      v-if="humanPlayers.length > 0"
       class="flex flex-wrap gap-3 rounded-[1.2rem] bg-[#eef3e8] px-4 py-3 text-sm font-bold text-[#243028] shadow-[0_4px_0_#c5d0bc]"
       aria-label="Tastatursteuerung"
     >
@@ -441,204 +689,46 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.horse-arena {
-  background: #8ec6df;
+.hr-dust {
+  animation: hr-dust-puff 0.35s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: right center;
 }
 
-.sky-wash {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(255, 255, 255, 0.55), transparent 55%),
-    linear-gradient(180deg, #6eb7d8 0%, #a8d7ea 55%, #d7ebc8 100%);
+.hr-stars {
+  animation: hr-stars-bob 0.5s ease-in-out infinite alternate;
 }
 
-.cloud {
-  position: absolute;
-  top: 12%;
-  width: 220%;
-  height: 4.5rem;
-  background:
-    radial-gradient(circle at 10% 50%, rgba(255, 255, 255, 0.9) 0 2.2rem, transparent 2.3rem),
-    radial-gradient(circle at 18% 45%, rgba(255, 255, 255, 0.85) 0 2.8rem, transparent 2.9rem),
-    radial-gradient(circle at 28% 55%, rgba(255, 255, 255, 0.8) 0 2rem, transparent 2.1rem),
-    radial-gradient(circle at 48% 48%, rgba(255, 255, 255, 0.88) 0 2.6rem, transparent 2.7rem),
-    radial-gradient(circle at 62% 52%, rgba(255, 255, 255, 0.8) 0 2.1rem, transparent 2.2rem),
-    radial-gradient(circle at 78% 46%, rgba(255, 255, 255, 0.85) 0 2.7rem, transparent 2.8rem);
-  opacity: 0.7;
-  will-change: transform;
+.hr-slowed {
+  opacity: 0.85;
 }
 
-.cloud-b {
-  top: 22%;
-  opacity: 0.45;
-  filter: blur(0.5px);
+.hr-flag {
+  animation: hr-flag-wave 1.2s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: left center;
 }
 
-.hills {
-  position: absolute;
-  inset: auto 0 0;
-  height: 55%;
-  width: 200%;
-  background:
-    radial-gradient(ellipse 40% 90% at 15% 100%, #5f9a58 0 42%, transparent 43%),
-    radial-gradient(ellipse 45% 100% at 40% 110%, #4f8a4d 0 48%, transparent 49%),
-    radial-gradient(ellipse 50% 95% at 70% 105%, #5a9454 0 46%, transparent 47%),
-    radial-gradient(ellipse 40% 90% at 95% 100%, #4a8248 0 44%, transparent 45%);
-  will-change: transform;
+@keyframes hr-dust-puff {
+  0% { opacity: 0.2; }
+  50% { opacity: 0.75; }
+  100% { opacity: 0.15; }
 }
 
-.track-body {
-  background:
-    linear-gradient(180deg, rgba(90, 140, 70, 0.35) 0 8%, transparent 8%),
-    linear-gradient(180deg, #c9a36a 0%, #b5894f 45%, #9a7040 100%);
-  box-shadow: inset 0 12px 18px rgba(70, 50, 25, 0.18);
+@keyframes hr-stars-bob {
+  from { opacity: 1; }
+  to { opacity: 0.55; }
 }
 
-.track-dashes {
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(255, 244, 220, 0.55) 0 18px,
-    transparent 18px 36px
-  );
-}
-
-.rail {
-  position: absolute;
-  inset-inline: 0;
-  height: 0.55rem;
-  background: linear-gradient(90deg, #5d3a1f, #9a6a3a, #5d3a1f);
-  box-shadow: 0 2px 0 rgba(30, 20, 10, 0.35);
-}
-
-.rail-top {
-  top: 6%;
-}
-
-.rail-bottom {
-  bottom: 8%;
-}
-
-.hurdle {
-  position: relative;
-  width: 2.6rem;
-  height: 3.6rem;
-}
-
-.hurdle-post {
-  position: absolute;
-  bottom: 0;
-  width: 0.45rem;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #d8b07a, #7a4e28);
-}
-
-.hurdle-post.left {
-  left: 0;
-}
-
-.hurdle-post.right {
-  right: 0;
-}
-
-.hurdle-bar {
-  position: absolute;
-  top: 18%;
-  left: 0;
-  right: 0;
-  height: 0.7rem;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #f0d7a8, #b8884a);
-  box-shadow: 0 2px 0 rgba(70, 40, 15, 0.35);
-}
-
-.horse-svg .dust {
-  opacity: 0;
-  transform-origin: center;
-}
-
-.is-galloping .dust {
-  opacity: 1;
-  animation: dust-puff 0.35s ease-out infinite;
-}
-
-.is-galloping .leg-1,
-.is-galloping .leg-3 {
-  transform-origin: 50% 0%;
-  animation: stride-a 0.28s ease-in-out infinite;
-}
-
-.is-galloping .leg-2,
-.is-galloping .leg-4 {
-  transform-origin: 50% 0%;
-  animation: stride-b 0.28s ease-in-out infinite;
-}
-
-.is-galloping .tail {
-  transform-origin: 34px 48px;
-  animation: tail-swish 0.4s ease-in-out infinite;
-}
-
-.is-jumping .legs {
-  transform: rotate(-12deg);
-  transform-origin: 90px 66px;
-}
-
-.is-jumping .dust {
-  opacity: 0;
-}
-
-@keyframes stride-a {
-  0%,
-  100% {
-    transform: rotate(16deg);
-  }
-  50% {
-    transform: rotate(-24deg);
-  }
-}
-
-@keyframes stride-b {
-  0%,
-  100% {
-    transform: rotate(-16deg);
-  }
-  50% {
-    transform: rotate(24deg);
-  }
-}
-
-@keyframes tail-swish {
-  0%,
-  100% {
-    transform: rotate(-6deg);
-  }
-  50% {
-    transform: rotate(10deg);
-  }
-}
-
-@keyframes dust-puff {
-  0% {
-    opacity: 0.15;
-    transform: scaleX(0.7);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scaleX(1.15);
-  }
-  100% {
-    opacity: 0.1;
-    transform: scaleX(0.85) translateX(-4px);
-  }
+@keyframes hr-flag-wave {
+  from { transform: scaleX(1) skewY(0deg); }
+  to { transform: scaleX(0.82) skewY(6deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .is-galloping .leg-1,
-  .is-galloping .leg-2,
-  .is-galloping .leg-3,
-  .is-galloping .leg-4,
-  .is-galloping .dust,
-  .is-galloping .tail {
+  .hr-dust,
+  .hr-stars,
+  .hr-flag {
     animation: none !important;
   }
 }
