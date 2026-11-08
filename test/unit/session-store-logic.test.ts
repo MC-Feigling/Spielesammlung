@@ -49,4 +49,16 @@ describe('session lobby validation', () => {
       aiPlayer,
     ])).toBe(true)
   })
+
+  it('never starts with robots only', () => {
+    const robot = (seatIndex: number) => ({
+      seatIndex,
+      type: 'ai' as const,
+      displayName: `Robo ${seatIndex}`,
+      avatarId: 'bear',
+    })
+
+    expect(canBeginSession([robot(0), robot(1)])).toBe(false)
+    expect(canBeginSession([robot(0), robot(1), robot(2), robot(3)])).toBe(false)
+  })
 })

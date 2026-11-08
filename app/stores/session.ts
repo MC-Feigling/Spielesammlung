@@ -37,8 +37,13 @@ export function isValidSessionPlayer(player: SessionSeat): player is SessionPlay
   return player.type === 'ai' || isNonEmptyString(player.profileId)
 }
 
+/** At least one human must be seated: robots alone never play against each other. */
+export function hasHumanPlayer(seats: readonly SessionSeat[]): boolean {
+  return seats.filter(isValidSessionPlayer).some((player) => player.type === 'human')
+}
+
 export function canBeginSession(seats: readonly SessionSeat[]): boolean {
-  return seats.filter(isValidSessionPlayer).length >= MIN_SEAT_COUNT
+  return seats.filter(isValidSessionPlayer).length >= MIN_SEAT_COUNT && hasHumanPlayer(seats)
 }
 
 function createSeats(count: number): SessionSeat[] {
@@ -67,6 +72,7 @@ export const useSessionStore = defineStore('session', () => {
   const players = computed(() => seats.value.filter(isValidSessionPlayer))
   const seatCount = computed(() => seats.value.length)
   const canBegin = computed(() => canBeginSession(seats.value))
+  const hasHuman = computed(() => hasHumanPlayer(seats.value))
 
   function startLobby(nextGameId: GameId) {
     gameId.value = nextGameId
@@ -169,6 +175,7 @@ export const useSessionStore = defineStore('session', () => {
     players,
     seatCount,
     canBegin,
+    hasHuman,
     startLobby,
     setSeatCount,
     setSeat,

@@ -75,6 +75,9 @@ const hasAi = computed(() => session.players.some((player) => player.type === 'a
 
 const lobbyHint = computed(() => {
   if (canStart.value) return 'Die Runde kann starten!'
+  if (session.players.length >= 1 && !session.hasHuman) {
+    return 'Mindestens ein Kind muss mitspielen – Roboter allein spielen nicht.'
+  }
   if (routeGame === 'racing' && session.canBegin && !isRacingRosterValid(session.players)) {
     return 'Maximal 2 Menschen und 2 KI.'
   }
