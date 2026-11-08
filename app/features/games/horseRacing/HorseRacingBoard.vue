@@ -14,13 +14,15 @@ import {
 } from './engine'
 import { chooseHorseRacingActions } from './ai'
 import { coatForLane, gallopPose } from './sprite'
+import type { TouchControlButton } from '~/components/game/TouchControls.vue'
+import { plural, sortStandings, type GameStanding } from '../shared/standings'
 
 const props = defineProps<{
   players: SessionPlayer[]
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const { play } = useSound()
@@ -275,6 +277,20 @@ function minimapX(progress: number): number {
   return 20 + Math.min(1, Math.max(0, progress / TRACK_LENGTH)) * 320
 }
 
+const TOUCH_BUTTONS: TouchControlButton[] = [
+  { id: 'hold', label: 'Galopp (halten)', icon: '🐎' },
+  { id: 'jump', label: 'Springen', icon: '⤴', primary: true },
+]
+
+function onTouchPress(seatIndex: number, id: string): void {
+  if (id === 'hold') setHumanHold(seatIndex, true)
+  else if (id === 'jump') triggerJump(seatIndex)
+}
+
+function onTouchRelease(seatIndex: number, id: string): void {
+  if (id === 'hold') setHumanHold(seatIndex, false)
+}
+
 function controlScheme(humanIndex: number): { hold: string; jump: string } {
   return humanIndex === 0
     ? { hold: 'D', jump: 'F' }
@@ -323,7 +339,11 @@ function tickLoop(timestamp: number): void {
     if (!hasEmittedComplete) {
       hasEmittedComplete = true
       play('win')
-      emit('complete', [winnerSeat])
+      emit('complete', [winnerSeat], sortStandings(game.state.horses.map((horse) => ({
+        seatIndex: horse.seatIndex,
+        score: horse.progress,
+        label: horse.seatIndex === winnerSeat ? 'im Ziel' : `${Math.min(99, Math.round((horse.progress / TRACK_LENGTH) * 100))} % geschafft`,
+      }))))
     }
     return
   }
@@ -351,7 +371,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-5xl flex-col gap-3">
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-3" :style="{ maxWidth: `max(32rem, min(64rem, calc((100vh - 25rem) * ${SCENE_W / SCENE_H})))` }">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#2a6b8a]">Rennbahn</p>
@@ -664,26 +684,16 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div
-      v-if="humanPlayers.length > 0"
-      class="flex flex-wrap gap-3 rounded-[1.2rem] bg-[#eef3e8] px-4 py-3 text-sm font-bold text-[#243028] shadow-[0_4px_0_#c5d0bc]"
-      aria-label="Tastatursteuerung"
-    >
-      <p
-        v-for="(human, index) in humanPlayers"
-        :key="`keys-${human.seatIndex}`"
-        class="inline-flex flex-wrap items-center gap-2"
-      >
-        <span
-          class="inline-block h-3 w-3 rounded-full"
-          :style="{ backgroundColor: getHorseColor(human.seatIndex) }"
-        />
-        <span class="max-w-[8rem] truncate">{{ human.displayName }}</span>
-        <kbd class="rounded-md bg-white px-2 py-1 font-mono shadow-sm ring-1 ring-[#c5d0bc]">{{ controlScheme(index).hold }}</kbd>
-        <span class="font-semibold text-[#5a6b60]">halten</span>
-        <kbd class="rounded-md bg-white px-2 py-1 font-mono shadow-sm ring-1 ring-[#c5d0bc]">{{ controlScheme(index).jump }}</kbd>
-        <span class="font-semibold text-[#5a6b60]">springen</span>
-      </p>
+    <div v-if="humanPlayers.length > 0" class="flex flex-wrap justify-center gap-3" aria-label="Steuerung">
+      <TouchControls
+        v-for="(human, index) in humanPlayers.slice(0, 2)"
+        :key="`touch-${human.seatIndex}`"
+        :player-name="`${human.displayName} · ${controlScheme(index).hold} halten, ${controlScheme(index).jump} springen`"
+        :color="getHorseColor(human.seatIndex)"
+        :buttons="TOUCH_BUTTONS"
+        @press="onTouchPress(human.seatIndex, $event)"
+        @release="onTouchRelease(human.seatIndex, $event)"
+      />
     </div>
   </div>
 </template>

@@ -10,17 +10,18 @@ import {
   countStones,
 } from './board'
 import { createMuehleGame, type MuehleAction, type MuehleGameState } from './engine'
+import type { GameStanding } from '../shared/standings'
+import { playerColor } from '~/constants/players'
 
 const props = defineProps<{
   players: SessionPlayer[]
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const AI_ACTION_DELAY_MS = 650
-const FALLBACK_COLORS = ['#e7674c', '#f2bf4f'] as const
 const POINT_INDEXES = Array.from({ length: MUEHLE_POINT_COUNT }, (_, index) => index)
 
 const game = createMuehleGame()
@@ -92,7 +93,7 @@ const stonesLeft = computed(() => [
 ])
 
 function seatColor(seatIndex: number): string {
-  return props.players[seatIndex]?.color ?? FALLBACK_COLORS[seatIndex] ?? FALLBACK_COLORS[0]
+  return playerColor(seatIndex)
 }
 
 function applyAction(action: MuehleAction) {
@@ -181,16 +182,18 @@ onBeforeUnmount(() => {
     <TurnBanner
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
+      :seat-index="currentPlayer.seatIndex"
       :is-ai="isAiTurn"
       :hint="turnHint"
     />
 
     <div
-      class="mt-4 rounded-2xl bg-[#5c4030] p-3 shadow-[0_4px_0_#3d2a1f] ring-2 ring-[#3d2a1f] sm:mt-6 sm:rounded-3xl sm:p-4 sm:shadow-[0_6px_0_#3d2a1f]"
+      class="rounded-2xl bg-[#5c4030] p-3 shadow-[0_4px_0_#3d2a1f] ring-2 ring-[#3d2a1f] sm:rounded-3xl sm:shadow-[0_6px_0_#3d2a1f]"
     >
       <svg
         viewBox="0 0 100 100"
-        class="mx-auto block h-auto w-full max-w-[28rem]"
+        class="mx-auto block h-auto w-full"
+        :style="{ maxWidth: 'max(16rem, min(28rem, calc(100vh - 23rem)))' }"
         role="img"
         aria-label="Mühle Brett"
       >
@@ -234,11 +237,11 @@ onBeforeUnmount(() => {
       </svg>
     </div>
 
-    <dl class="mt-4 grid gap-2 sm:mt-6 sm:grid-cols-2 sm:gap-3">
+    <dl class="mt-3 grid gap-2 sm:grid-cols-2">
       <div
         v-for="(player, playerIndex) in players"
         :key="player.seatIndex"
-        class="flex items-center gap-2 rounded-xl bg-[var(--color-panel)] px-3 py-2 ring-2 ring-[#dfbd8c] sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3"
+        class="flex items-center gap-2 rounded-xl bg-[var(--color-panel)] px-3 py-1.5 text-sm ring-2 ring-[#dfbd8c] sm:gap-3 sm:rounded-2xl"
         :class="playerIndex === state.currentPlayerIndex ? 'ring-[var(--color-accent)]' : ''"
       >
         <span

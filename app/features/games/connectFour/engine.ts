@@ -83,6 +83,35 @@ function hasWinningLine(
   return false
 }
 
+/** Cells (column,row) of the winning line through the last move, or [] if none. */
+export function findWinningLine(
+  cells: Array<Array<number | null>>,
+  lastMove: { column: number; row: number } | null,
+): Array<{ column: number; row: number }> {
+  if (!lastMove) return []
+  const seat = cells[lastMove.column]?.[lastMove.row]
+  if (seat === null || seat === undefined) return []
+
+  for (const [deltaColumn, deltaRow] of DIRECTIONS) {
+    const line = [{ ...lastMove }]
+    for (const sign of [1, -1]) {
+      let column = lastMove.column + deltaColumn * sign
+      let row = lastMove.row + deltaRow * sign
+      while (
+        column >= 0 && column < COLUMN_COUNT && row >= 0 && row < ROW_COUNT
+        && cells[column]![row] === seat
+      ) {
+        line.push({ column, row })
+        column += deltaColumn * sign
+        row += deltaRow * sign
+      }
+    }
+    if (line.length >= WIN_LENGTH) return line
+  }
+
+  return []
+}
+
 function isBoardFull(cells: Array<Array<number | null>>): boolean {
   return cells.every((column) => column[ROW_COUNT - 1] !== null)
 }

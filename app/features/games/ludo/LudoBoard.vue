@@ -25,13 +25,14 @@ import {
 } from './boardLayout'
 import { chooseLudoAction } from './ai'
 import { canControlPiece, createLudoGame, LUDO_YARD_ROLL_ATTEMPTS_MAX, type LudoAction, type LudoGameState, type LudoMoveFrom } from './engine'
+import { sortStandings, type GameStanding } from '../shared/standings'
 
 const props = defineProps<{
   players: SessionPlayer[]
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const AI_ACTION_DELAY_MS = 700
@@ -298,7 +299,11 @@ function applyAction(action: LudoAction) {
   if (state.value.lastEvent === 'capture') play('hit')
   if (result.winnerSeatIndexes.length > 0) {
     play('win')
-    emit('complete', result.winnerSeatIndexes)
+    emit('complete', result.winnerSeatIndexes, sortStandings(state.value.pieces.map((pieces, index) => {
+      const home = pieces.filter((piece) => isFullyHome(piece)).length
+      const progress = pieces.reduce((sum, piece) => sum + Math.max(0, piece.progress), 0)
+      return { seatIndex: index, score: home * 1000 + progress, label: `${home} im Ziel` }
+    })))
   }
 }
 
@@ -350,12 +355,16 @@ onBeforeUnmount(() => {
     <TurnBanner
       v-if="currentPlayer"
       :player-name="currentPlayer.displayName"
+      :seat-index="currentPlayer.seatIndex"
       :is-ai="isAiTurn"
       :hint="turnHint"
     />
 
-    <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_15rem]">
-      <div class="rounded-3xl bg-[var(--color-panel)] p-3 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c] sm:p-5">
+    <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_15rem]">
+      <div
+        class="mx-auto w-full rounded-3xl bg-[var(--color-panel)] p-3 shadow-[0_6px_0_#c48a4a] ring-2 ring-[#dfbd8c]"
+        :style="{ maxWidth: 'max(20rem, calc(100vh - 16.5rem))' }"
+      >
         <div
           class="relative aspect-square overflow-hidden rounded-2xl"
           :style="{ backgroundColor: BOARD_FACE }"

@@ -4,6 +4,7 @@ import type { SessionPlayer } from '~/types/game'
 import { createMemoryAi } from './ai'
 import { createMemoryGame, type MemoryAction, type MemoryGameState } from './engine'
 import { useSessionStore } from '~/stores/session'
+import { plural, sortStandings, type GameStanding } from '../shared/standings'
 
 const props = defineProps<{
   players: SessionPlayer[]
@@ -12,7 +13,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  complete: [winnerSeatIndexes: number[]]
+  complete: [winnerSeatIndexes: number[], standings?: GameStanding[]]
 }>()
 
 const CARD_SYMBOLS = ['🍎', '🦊', '🌈', '⭐', '🐸', '🎈', '🦁', '🚀'] as const
@@ -67,7 +68,11 @@ function applyAction(action: MemoryAction) {
 
   if (result.winnerSeatIndexes.length > 0) {
     play('win')
-    emit('complete', result.winnerSeatIndexes)
+    emit('complete', result.winnerSeatIndexes, sortStandings(state.value.matchedPairCounts.map((count, index) => ({
+      seatIndex: index,
+      score: count,
+      label: plural(count, 'Paar', 'Paare'),
+    }))))
   }
 }
 
@@ -116,6 +121,7 @@ onBeforeUnmount(() => {
       v-if="currentPlayer"
       class="w-full"
       :player-name="currentPlayer.displayName"
+      :seat-index="currentPlayer.seatIndex"
       :is-ai="isAiTurn"
       :hint="isAiTurn ? 'Die Karten werden gleich aufgedeckt.' : 'Finde zwei gleiche Karten.'"
     />
