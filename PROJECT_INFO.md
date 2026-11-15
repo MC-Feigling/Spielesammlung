@@ -32,7 +32,7 @@ Jugendschutz: `docs/superpowers/plans/2026-08-04-jugendschutz-spielzeit.md`
 
 ## MVP-Spiele
 
-Memory, Kniffel (Custom-Score), Mensch ärgere dich nicht, Spurrennen, UNO, Vier gewinnt, Shut the Box, Mühle, Pferderennen, Puzzle-Rennen, Drachenkampf, Handwerker
+Memory, Kniffel (Custom-Score), Mensch ärgere dich nicht, Spurrennen, UNO, Vier gewinnt, Shut the Box, Mühle, Pferderennen, Puzzle-Rennen, Drachenkampf, Handwerker, Solitär (Solo)
 
 ## Jugendschutz Wiederherstellung
 

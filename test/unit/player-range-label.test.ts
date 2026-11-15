@@ -11,12 +11,18 @@ describe('formatPlayerRange', () => {
   })
 
   it('labels fixed two-player games without a duplicate range', () => {
-    const fixedTwoPlayerGames = GAMES.filter((game) => game.minPlayers === game.maxPlayers)
+    const fixedTwoPlayerGames = GAMES.filter((game) => game.minPlayers === game.maxPlayers && game.maxPlayers === 2)
 
     expect(fixedTwoPlayerGames.map((game) => game.id)).toEqual(['connectFour', 'muehle', 'dragonBoss'])
     for (const game of fixedTwoPlayerGames) {
       expect(formatPlayerRange(game.minPlayers, game.maxPlayers)).toBe('2 Spieler')
     }
+  })
+
+  it('labels Solitär as a solo game', () => {
+    const solo = GAMES.filter((game) => game.maxPlayers === 1)
+    expect(solo.map((game) => game.id)).toEqual(['solitaire'])
+    expect(formatPlayerRange(1, 1)).toBe('1 Spieler')
   })
 
   it('lists Handwerker first so it is visible without scrolling', () => {

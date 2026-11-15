@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { GameId, SessionPlayer } from '~/types/game'
+import { GAMES } from '../constants/games'
 import { AI_DIFFICULTIES, DEFAULT_AI_DIFFICULTY, type AiDifficulty } from '../features/games/shared/ai'
 import {
   DEFAULT_PUZZLE_GRID_SIZE,
@@ -42,8 +43,13 @@ export function hasHumanPlayer(seats: readonly SessionSeat[]): boolean {
   return seats.filter(isValidSessionPlayer).some((player) => player.type === 'human')
 }
 
-export function canBeginSession(seats: readonly SessionSeat[]): boolean {
-  return seats.filter(isValidSessionPlayer).length >= MIN_SEAT_COUNT && hasHumanPlayer(seats)
+/** Fewest players a game needs (solo games like Solitär need just one child). */
+export function minPlayersFor(gameId: GameId | null | undefined): number {
+  return GAMES.find((game) => game.id === gameId)?.minPlayers ?? MIN_SEAT_COUNT
+}
+
+export function canBeginSession(seats: readonly SessionSeat[], minPlayers = MIN_SEAT_COUNT): boolean {
+  return seats.filter(isValidSessionPlayer).length >= minPlayers && hasHumanPlayer(seats)
 }
 
 function createSeats(count: number): SessionSeat[] {
@@ -71,7 +77,7 @@ export const useSessionStore = defineStore('session', () => {
 
   const players = computed(() => seats.value.filter(isValidSessionPlayer))
   const seatCount = computed(() => seats.value.length)
-  const canBegin = computed(() => canBeginSession(seats.value))
+  const canBegin = computed(() => canBeginSession(seats.value, minPlayersFor(gameId.value)))
   const hasHuman = computed(() => hasHumanPlayer(seats.value))
 
   function startLobby(nextGameId: GameId) {

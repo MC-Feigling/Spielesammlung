@@ -1,6 +1,6 @@
 # Spielesammlung
 
-Kinderfreundliche Browser-Spielesammlung für 2–4 Spieler an einem Laptop.
+Kinderfreundliche Browser-Spielesammlung für 1–4 Spieler an einem Laptop.
 
 Hot-Seat: abwechselnd am gleichen Gerät. Profile, KI-Gegner und lokale Wins.
 
@@ -20,6 +20,7 @@ Hot-Seat: abwechselnd am gleichen Gerät. Profile, KI-Gegner und lokale Wins.
 | Puzzle-Rennen | 2–4 | Wer legt das Bild zuerst? |
 | Drachenkampf | 2 | Drachen treffen, ausweichen |
 | Handwerker | 2–4 | Aufträge erledigen (Werkzeug und Teil wählen) |
+| Solitär | 1 | Kugeln überspringen, bis nur eine übrig ist (33er-Brett) |
 
 ## Stack
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canBeginSession, isValidSessionPlayer } from '../../app/stores/session'
+import { canBeginSession, isValidSessionPlayer, minPlayersFor } from '../../app/stores/session'
 
 describe('session lobby validation', () => {
   it('requires a profile for human players', () => {
@@ -48,6 +48,15 @@ describe('session lobby validation', () => {
       },
       aiPlayer,
     ])).toBe(true)
+  })
+
+  it('lets solo games start with a single child', () => {
+    const mia = { seatIndex: 0, type: 'human' as const, profileId: 'mia', displayName: 'Mia', avatarId: 'fox' }
+    expect(minPlayersFor('solitaire')).toBe(1)
+    expect(minPlayersFor('memory')).toBe(2)
+    expect(canBeginSession([mia, null], minPlayersFor('solitaire'))).toBe(true)
+    expect(canBeginSession([mia, null], minPlayersFor('memory'))).toBe(false)
+    expect(canBeginSession([{ seatIndex: 0, type: 'ai', displayName: 'Robo', avatarId: 'bear' }, null], 1)).toBe(false)
   })
 
   it('never starts with robots only', () => {

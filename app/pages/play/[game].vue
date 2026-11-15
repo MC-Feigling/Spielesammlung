@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { gameTitle, isGameId } from '~/constants/games'
+import { minPlayersFor } from '~/stores/session'
 import { humanWinnerProfileIds } from '~/features/profiles/winning-profiles'
 import { buildPodium, type GameStanding } from '~/features/games/shared/standings'
 import { playerColor, playerTextColor } from '~/constants/players'
@@ -21,6 +22,10 @@ const gameBar = provideGameBar()
 const isQuitDialogOpen = ref(false)
 const hasRecordedWin = ref(false)
 const players = computed(() => session.players)
+const minPlayers = minPlayersFor(activeGameId)
+/** Custom end-of-round headline for games that can end without a winner (Solitär). */
+const endHeadline = ref('')
+const isOver = computed(() => winners.value.length > 0 || endHeadline.value !== '')
 const memoryGrid = computed(() => session.memoryGridSize === '4x4'
   ? { rows: 4, cols: 4 }
   : { rows: 4, cols: 3 })
@@ -34,6 +39,7 @@ const winners = computed(() => winnerSeatIndexes.value
   .filter((name): name is string => Boolean(name)))
 
 const winHeadline = computed(() => {
+  if (endHeadline.value) return endHeadline.value
   const names = winners.value
   if (names.length === 0) return ''
   if (names.length === 1) return `${names[0]} gewinnt!`
@@ -62,7 +68,7 @@ if (!activeGameId) {
 
 if (
   activeGameId
-  && (session.gameId !== activeGameId || players.value.length < 2)
+  && (session.gameId !== activeGameId || players.value.length < minPlayers)
 ) {
   void navigateTo(`/lobby/${activeGameId}`)
 }
@@ -90,7 +96,26 @@ function completeGame(nextWinnerSeatIndexes: number[], standings?: GameStanding[
   winNote.value = notes.join(' ')
 }
 
+/** Solitär: the round ends when no jump is left; only one remaining peg counts as a win. */
+function finishSolitaire(pegsLeft: number, perfect: boolean) {
+  if (hasRecordedWin.value || endHeadline.value) return
+  const label = pegsLeft === 1
+    ? (perfect ? 'Letzte Kugel in der Mitte!' : '1 Kugel übrig')
+    : `${pegsLeft} Kugeln übrig`
+  const standings = [{ seatIndex: 0, score: pegsLeft, label }]
+  if (pegsLeft === 1) {
+    endHeadline.value = perfect ? 'Perfekt gelöst!' : 'Geschafft – nur noch 1 Kugel!'
+    completeGame([0], standings)
+    return
+  }
+  finalStandings.value = standings
+  gameBar.turn = null
+  endHeadline.value = pegsLeft <= 3 ? `Fast! Noch ${pegsLeft} Kugeln übrig.` : `Keine Sprünge mehr – ${pegsLeft} Kugeln übrig.`
+  winNote.value = 'Probier es gleich nochmal!'
+}
+
 function playAgain() {
+  endHeadline.value = ''
   winnerSeatIndexes.value = []
   finalStandings.value = undefined
   winNote.value = ''
@@ -101,16 +126,16 @@ function playAgain() {
 </script>
 
 <template>
-  <section v-if="players.length >= 2" class="mx-auto max-w-6xl">
+  <section v-if="players.length >= minPlayers" class="mx-auto max-w-6xl">
     <GameBar
       :title="gameTitleText"
       :players="players"
-      :turn="winners.length > 0 ? null : gameBar.turn"
+      :turn="isOver ? null : gameBar.turn"
       @quit="isQuitDialogOpen = true"
     />
 
     <WinScreen
-      v-if="winners.length > 0"
+      v-if="isOver"
       :game-title="gameTitleText"
       :headline="winHeadline"
       :entries="podiumEntries"
@@ -174,6 +199,11 @@ function playAgain() {
       v-else-if="routeGame === 'muehle'"
       :players="players"
       @complete="completeGame"
+    />
+    <SolitaireBoard
+      v-else-if="routeGame === 'solitaire'"
+      :players="players"
+      @finish="finishSolitaire"
     />
 
     </div>

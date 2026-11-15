@@ -102,6 +102,7 @@ const lobbyHint = computed(() => {
   if (routeGame === 'muehle' && session.canBegin && !isMuehleRosterValid(session.players)) {
     return 'Genau 2 Plätze besetzen.'
   }
+  if (game.value?.maxPlayers === 1) return 'Wähle ein Kind aus – du spielst allein.'
   return 'Mindestens zwei besetzte Plätze auswählen.'
 })
 
@@ -293,7 +294,7 @@ function leaveLobby() {
           <p class="font-bold text-[#6b4f3a]">{{ game.blurb }}</p>
         </div>
         <AppButton
-          v-if="lastLobbyRoster.length >= 2"
+          v-if="lastLobbyRoster.length >= game.minPlayers"
           variant="ghost"
           class="text-sm"
           @click="applyLastLobby"
@@ -349,6 +350,7 @@ function leaveLobby() {
         </div>
 
         <button
+          v-if="maxPlayers > 1"
           type="button"
           class="lobby-tile is-add"
           :disabled="isFull"
