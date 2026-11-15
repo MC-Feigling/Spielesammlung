@@ -32,7 +32,8 @@ import { isUnoRosterValid } from '~/features/games/uno/lobby'
 import type { AiDifficulty } from '~/features/games/shared/ai'
 import type { GameId } from '~/types/game'
 import type { SessionPlayerInput } from '~/stores/session'
-import type { MemoryGridSize } from '~/stores/session'
+import type { MemoryGridSize, MoleFigureCount } from '~/stores/session'
+import { MOLE_FIGURE_COUNTS } from '~/features/games/moleMeadow/engine'
 
 const route = useRoute()
 const session = useSessionStore()
@@ -236,6 +237,9 @@ function applyLastLobby() {
   if (gameId.value === 'memory' && (last.memoryGridSize === '4x3' || last.memoryGridSize === '4x4')) {
     session.setMemoryGridSize(last.memoryGridSize)
   }
+  if (gameId.value === 'moleMeadow' && MOLE_FIGURE_COUNTS.includes(last.moleFigureCount as MoleFigureCount)) {
+    session.setMoleFigureCount(last.moleFigureCount as MoleFigureCount)
+  }
   if (gameId.value === 'puzzleRace') {
     if (last.puzzleGridSize === '3x3' || last.puzzleGridSize === '5x5' || last.puzzleGridSize === '7x7') {
       session.setPuzzleGridSize(last.puzzleGridSize as PuzzleGridSize)
@@ -254,6 +258,7 @@ function startGame() {
     memoryGridSize: session.memoryGridSize,
     puzzleGridSize: session.puzzleGridSize,
     puzzleImageId: session.puzzleImageDataUrl ? undefined : session.puzzleImageId,
+    moleFigureCount: session.moleFigureCount,
   }))
   session.beginPlay()
 }
@@ -424,6 +429,24 @@ function leaveLobby() {
               <i v-for="n in size.cards" :key="n" />
             </span>
             {{ size.label }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="gameId === 'moleMeadow'" class="mt-5">
+        <h3 class="font-extrabold">Wie viele Hasen pro Kind?</h3>
+        <div class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Hasen pro Kind">
+          <button
+            v-for="count in MOLE_FIGURE_COUNTS"
+            :key="count"
+            type="button"
+            role="radio"
+            class="option-btn"
+            :class="{ 'is-on': session.moleFigureCount === count }"
+            :aria-checked="session.moleFigureCount === count"
+            @click="session.setMoleFigureCount(count)"
+          >
+            <span aria-hidden="true">{{ '🐰'.repeat(count) }}</span> {{ count }} Hasen
           </button>
         </div>
       </div>

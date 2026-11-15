@@ -45,3 +45,9 @@ export const MUEHLE_EASY_BLUNDER_RATE = 0.45
 
 /** Chance that medium Mühle AI picks a random legal action. */
 export const MUEHLE_MEDIUM_BLUNDER_RATE = MUEHLE_EASY_BLUNDER_RATE / 2
+
+/** Chance that easy Maulwurf-Wiese AI moves a random rabbit. */
+export const MOLE_MEADOW_EASY_BLUNDER_RATE = 0.5
+
+/** Chance that medium Maulwurf-Wiese AI moves a random rabbit. */
+export const MOLE_MEADOW_MEDIUM_BLUNDER_RATE = MOLE_MEADOW_EASY_BLUNDER_RATE / 2

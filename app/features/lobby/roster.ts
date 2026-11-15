@@ -59,6 +59,7 @@ export interface LastLobby {
   memoryGridSize?: string
   puzzleGridSize?: string
   puzzleImageId?: string
+  moleFigureCount?: number
 }
 
 export function toLastLobby(

@@ -9,6 +9,11 @@ import {
   type PuzzleGridSize,
 } from '../features/games/puzzleRace/engine'
 import {
+  DEFAULT_MOLE_FIGURE_COUNT,
+  MOLE_FIGURE_COUNTS,
+  type MoleFigureCount,
+} from '../features/games/moleMeadow/engine'
+import {
   DEFAULT_PUZZLE_IMAGE_ID,
   isKnownPuzzleImageId,
 } from '../features/games/puzzleRace/images'
@@ -16,7 +21,7 @@ import {
 export type SessionSeat = SessionPlayer | null
 export type SessionPlayerInput = Omit<SessionPlayer, 'seatIndex'>
 export type MemoryGridSize = '4x3' | '4x4'
-export type { PuzzleGridSize }
+export type { PuzzleGridSize, MoleFigureCount }
 
 export const MIN_SEAT_COUNT = 2
 export const MAX_SEAT_COUNT = 4
@@ -74,6 +79,7 @@ export const useSessionStore = defineStore('session', () => {
   const puzzleGridSize = ref<PuzzleGridSize>(DEFAULT_PUZZLE_GRID_SIZE)
   const puzzleImageId = ref<string>(DEFAULT_PUZZLE_IMAGE_ID)
   const puzzleImageDataUrl = ref<string | null>(null)
+  const moleFigureCount = ref<MoleFigureCount>(DEFAULT_MOLE_FIGURE_COUNT)
 
   const players = computed(() => seats.value.filter(isValidSessionPlayer))
   const seatCount = computed(() => seats.value.length)
@@ -86,6 +92,7 @@ export const useSessionStore = defineStore('session', () => {
     memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
     aiDifficulty.value = DEFAULT_AI_DIFFICULTY
     resetPuzzleFields(puzzleGridSize, puzzleImageId, puzzleImageDataUrl)
+    moleFigureCount.value = DEFAULT_MOLE_FIGURE_COUNT
   }
 
   function setSeatCount(nextSeatCount: number) {
@@ -147,6 +154,14 @@ export const useSessionStore = defineStore('session', () => {
     puzzleImageDataUrl.value = nextDataUrl
   }
 
+  function setMoleFigureCount(nextCount: MoleFigureCount) {
+    if (!MOLE_FIGURE_COUNTS.includes(nextCount)) {
+      throw new Error('Ungültige Hasen-Anzahl')
+    }
+
+    moleFigureCount.value = nextCount
+  }
+
   function setAiDifficulty(nextDifficulty: AiDifficulty) {
     if (!AI_DIFFICULTIES.includes(nextDifficulty)) {
       throw new Error('Ungültiger KI-Schwierigkeitsgrad')
@@ -168,6 +183,7 @@ export const useSessionStore = defineStore('session', () => {
     memoryGridSize.value = DEFAULT_MEMORY_GRID_SIZE
     aiDifficulty.value = DEFAULT_AI_DIFFICULTY
     resetPuzzleFields(puzzleGridSize, puzzleImageId, puzzleImageDataUrl)
+    moleFigureCount.value = DEFAULT_MOLE_FIGURE_COUNT
   }
 
   return {
@@ -178,6 +194,7 @@ export const useSessionStore = defineStore('session', () => {
     puzzleGridSize,
     puzzleImageId,
     puzzleImageDataUrl,
+    moleFigureCount,
     players,
     seatCount,
     canBegin,
@@ -190,6 +207,7 @@ export const useSessionStore = defineStore('session', () => {
     setPuzzleImageId,
     setPuzzleImageDataUrl,
     setAiDifficulty,
+    setMoleFigureCount,
     beginPlay,
     endSession,
   }

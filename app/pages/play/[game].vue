@@ -200,6 +200,12 @@ function playAgain() {
       :players="players"
       @complete="completeGame"
     />
+    <MoleMeadowBoard
+      v-else-if="routeGame === 'moleMeadow'"
+      :players="players"
+      :figure-count="session.moleFigureCount"
+      @complete="completeGame"
+    />
     <SolitaireBoard
       v-else-if="routeGame === 'solitaire'"
       :players="players"

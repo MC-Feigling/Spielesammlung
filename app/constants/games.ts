@@ -12,6 +12,7 @@ export const GAMES: Array<{ id: GameId; title: string; blurb: string; minPlayers
   { id: 'muehle', title: 'Mühle', blurb: 'Drei in einer Reihe und Steine schlagen!', minPlayers: 2, maxPlayers: 2 },
   { id: 'horseRacing', title: 'Pferderennen', blurb: 'Halten, springen, zuerst ins Ziel!', minPlayers: 2, maxPlayers: 4 },
   { id: 'puzzleRace', title: 'Puzzle-Rennen', blurb: 'Wer legt das Bild zuerst?', minPlayers: 2, maxPlayers: 4 },
+  { id: 'moleMeadow', title: 'Maulwurf-Wiese', blurb: 'Hasen hoppeln zum Apfelbaum – Vorsicht, der Maulwurf gräbt Löcher!', minPlayers: 2, maxPlayers: 4 },
   { id: 'solitaire', title: 'Solitär', blurb: 'Springe über die Kugeln, bis nur noch eine übrig ist!', minPlayers: 1, maxPlayers: 1 },
   { id: 'dragonBoss', title: 'Drachenkampf', blurb: 'Treffe den Drachen, weiche aus, gewinne mit den meisten Treffern!', minPlayers: 2, maxPlayers: 2 },
 ]
@@ -46,4 +47,5 @@ export const GAME_ICONS: Record<GameId, string> = {
   dragonBoss: '🐉',
   handyman: '🔧',
   solitaire: '🟤',
+  moleMeadow: '🐰',
 }
